@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>*{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style></head><body><title>Viagem à Lua</title>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0a0f26"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Viagem à Lua"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png"><style>*{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}.install{display:grid;gap:8px;padding:14px 16px;border-radius:16px;background:#2a2350;color:#f4e9c8;font-weight:700;line-height:1.4}.install button{justify-self:start;font:800 1rem "Baloo 2",sans-serif;background:#ff8a3d;color:#1b1630;border:0;border-radius:12px;padding:10px 16px;cursor:pointer}</style></head><body><title>Viagem à Lua</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;700;800&display=swap">
 <style>
@@ -63,7 +63,13 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
   background:rgba(10,15,38,.7);padding:10px 14px;border-radius:14px;pointer-events:none}
 #toast{position:fixed;z-index:11;left:50%;transform:translateX(-50%);top:calc(56px + env(safe-area-inset-top,0px));
   background:var(--moon);color:#1b1630;font-weight:800;padding:9px 14px;border-radius:12px;max-width:calc(100% - 32px);text-align:center}
+#rotate{position:fixed;inset:0;z-index:30;background:var(--night);display:grid;place-content:center;justify-items:center;gap:18px;text-align:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#rotate .phone{width:56px;height:96px;border:5px solid var(--moon);border-radius:12px;animation:turn 2.2s ease-in-out infinite}
+#rotate p{font:800 1.5rem/1.2 var(--display);margin:0;max-width:16ch}
+@keyframes turn{0%,20%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}
 @media (max-width:420px){.go{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){#rotate .phone{animation:none;transform:rotate(-90deg)}}
 @media (prefers-reduced-motion:reduce){.hud{transition:none}}
 </style>
 
@@ -103,6 +109,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 </div>
 <div id="cap" hidden></div>
 <div id="toast" hidden></div>
+<div id="rotate" hidden><div class="phone" aria-hidden="true"></div><p>Deite o celular para começar a viagem</p></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -446,7 +453,7 @@ canvas.addEventListener('pointerup',()=>{if(pDown&&!moved)showHud();pDown=null;}
 
 /* ---------- estado ---------- */
 let stereo=false,started=false,running=false,T=0,evIdx=0,handsYaw=null,gaze=0,last=0;
-const hud=$('#hud'),toast=$('#toast');let hudTimer=0,toastTimer=0;
+const hud=$('#hud'),toast=$('#toast'),rotateEl=$('#rotate');let hudTimer=0,toastTimer=0;
 function showHud(){hud.classList.remove('off');clearTimeout(hudTimer);if(stereo)hudTimer=setTimeout(()=>hud.classList.add('off'),3500);}
 function showToast(msg){toast.textContent=msg;toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,4000);}
 
@@ -517,7 +524,9 @@ function render(){
 function loop(now){
   requestAnimationFrame(loop);if(!started)return;
   const dt=Math.min(.1,(now-(last||now))/1000);last=now;
-  if(running){T+=dt;while(evIdx<EV.length&&EV[evIdx][0]<=T){EV[evIdx][1]();evIdx++;}}
+  const portrait=stereo&&window.innerHeight>window.innerWidth;
+  if(rotateEl.hidden===portrait){rotateEl.hidden=!portrait;if(!portrait)needCalib=true;}
+  if(running&&!portrait){T+=dt;while(evIdx<EV.length&&EV[evIdx][0]<=T){EV[evIdx][1]();evIdx++;}}
   updateHead();apply(T,running?dt:0);render();
 }
 function resize(){renderer.setSize(window.innerWidth,window.innerHeight,false);}
@@ -546,8 +555,21 @@ $('#btnFlat').addEventListener('click',()=>start('flat'));
 $('#bCenter').addEventListener('click',()=>{needCalib=true;dragYaw=0;dragPitch=0;showHud();});
 $('#bSkip').addEventListener('click',()=>{const n=SKIPS.find(s=>s>T+.5);if(n===undefined)restart();else jumpTo(n);running=true;$('#bPause').textContent='Pausar';if(ac)ac.resume();showHud();});
 $('#bPause').addEventListener('click',()=>{running=!running;$('#bPause').textContent=running?'Pausar':'Continuar';if(hasSpeech){running?speechSynthesis.resume():speechSynthesis.pause();}if(ac){running?ac.resume():ac.suspend();}showHud();});
-$('#bExit').addEventListener('click',()=>{started=false;running=false;if(hasSpeech)speechSynthesis.cancel();if(ac)ac.suspend();try{document.fullscreenElement&&document.exitFullscreen();}catch(e){}$('#start').hidden=false;cap.hidden=true;hud.classList.add('off');});
+$('#bExit').addEventListener('click',()=>{started=false;running=false;if(hasSpeech)speechSynthesis.cancel();if(ac)ac.suspend();try{document.fullscreenElement&&document.exitFullscreen();}catch(e){}$('#start').hidden=false;cap.hidden=true;rotateEl.hidden=true;hud.classList.add('off');});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&running){running=false;$('#bPause').textContent='Continuar';if(hasSpeech)speechSynthesis.cancel();if(ac)ac.suspend();hud.classList.remove('off');}});
 })();
 </script>
-</body></html>
+<script>
+(function(){
+  if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  const installed=matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(installed)return;
+  const card=document.querySelector('#start .card'),box=document.createElement('div');box.className='install';box.hidden=true;
+  card.insertBefore(box,card.querySelector('.go'));
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ios){box.innerHTML='Para abrir em tela cheia, sem o navegador: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.';box.hidden=false;}
+  let ev=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;box.innerHTML='<span>Instale como app: abre deitado, em tela cheia e funciona sem internet.</span><button type="button">Instalar Viagem à Lua</button>';box.hidden=false;
+    box.querySelector('button').onclick=async()=>{ev.prompt();await ev.userChoice.catch(()=>{});box.hidden=true;};});
+  window.addEventListener('appinstalled',()=>box.hidden=true);
+})();
+</script></body></html>
