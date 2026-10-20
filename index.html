@@ -47,6 +47,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 .go small{display:block;font:700 .74rem var(--body);opacity:.75;margin-top:4px}
 .toggle{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--muted)}
 .opts{display:grid;gap:10px}
+.ipd{display:grid;gap:6px;color:var(--muted);font-weight:700}.ipd b{color:var(--moon)}.ipd input{width:100%;accent-color:var(--flame)}.ipd small{font-weight:400;line-height:1.4}
 .toggle input{width:20px;height:20px;accent-color:var(--flame)}
 .steps{margin:0;padding:16px 18px 16px 38px;border:1px solid var(--line);border-radius:16px;background:rgba(20,27,63,.55);display:grid;gap:8px;line-height:1.45}
 .steps li::marker{color:var(--flame);font-weight:800}
@@ -55,8 +56,8 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 .route li.hi{background:#2a2350;color:var(--moon)}
 .note{font-size:.82rem;color:var(--muted);margin:0;line-height:1.45}
 
-.hud{position:fixed;z-index:10;top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));
-  display:flex;gap:6px;transition:opacity .3s}
+.hud{position:fixed;z-index:10;top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));left:calc(8px + env(safe-area-inset-left,0px));
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;transition:opacity .3s}
 .hud.off{opacity:0;pointer-events:none}
 .hud button{font:700 .82rem var(--body);color:var(--ink);background:rgba(10,15,38,.72);border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer}
 #cap{position:fixed;z-index:9;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));
@@ -92,6 +93,11 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
       <label class="toggle"><input type="checkbox" id="narr" checked> Narração em voz</label>
       <label class="toggle"><input type="checkbox" id="cam" checked> Começar e terminar na sala de aula (câmera)</label>
       <label class="toggle"><input type="checkbox" id="lens" checked> Correção das lentes do Shinecon</label>
+      <div class="ipd">
+        <label for="ipd">Distância entre as lentes: <b id="ipdVal">62 mm</b></label>
+        <input type="range" id="ipd" min="50" max="72" step="1" value="62">
+        <small>Imagem duplicada? Meça de centro a centro das lentes do óculos com uma régua e coloque aqui. Também dá para ajustar durante a viagem com os botões Olhos − e Olhos +.</small>
+      </div>
     </div>
     <ol class="steps">
       <li>Volume do celular no máximo e brilho alto.</li>
@@ -107,6 +113,8 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 </div>
 
 <div class="hud off" id="hud">
+  <button id="bIpdM">Olhos −</button>
+  <button id="bIpdP">Olhos +</button>
   <button id="bCenter">Centralizar</button>
   <button id="bSkip">Pular cena</button>
   <button id="bPause">Pausar</button>
@@ -144,7 +152,7 @@ const rig=new THREE.Group(); scene.add(rig);
 const head=new THREE.Group(); rig.add(head);
 const camMono=new THREE.PerspectiveCamera(70,1,.03,6000);
 const camL=new THREE.PerspectiveCamera(90,1,.03,6000), camR=camL.clone();
-camL.position.x=-.032; camR.position.x=.032;
+camL.position.x=-.026; camR.position.x=.026; /* olhos de criança (~52 mm) */
 head.add(camMono,camL,camR);
 
 const hemi=new THREE.HemisphereLight(0xcfe8ff,0x5c6b3a,.9); scene.add(hemi);
@@ -822,19 +830,23 @@ function apply(t,dt){
   if(ac&&rumbleGain){rumbleGain.gain.setTargetAtTime(rumbleLevel(t)*.8,ac.currentTime,.12);droneGain.gain.setTargetAtTime(t>=SW[1]?.045:0,ac.currentTime,.5);}
 }
 
-let lensOn=true,rt=null;const postScene=new THREE.Scene(),postCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-const postMat=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},k:{value:new THREE.Vector2(.24,.1)},aspect:{value:1}},depthTest:false,depthWrite:false,
+let lensOn=true,rt=null,guideUntil=0;const MM_PER_PX=.175;
+let ipdMm=62;try{const v=+localStorage.getItem('vl-ipd');if(v>=50&&v<=72)ipdMm=v;}catch(e){}
+function setIpd(v,show){ipdMm=clamp(Math.round(v),50,72);try{localStorage.setItem('vl-ipd',ipdMm);}catch(e){}const el=$('#ipd');if(el)el.value=ipdMm;const lb=$('#ipdVal');if(lb)lb.textContent=ipdMm+' mm';if(show){guideUntil=performance.now()+4000;showToast('Lentes: '+ipdMm+' mm');}}
+setIpd(ipdMm,false);$('#ipd').addEventListener('input',e=>setIpd(+e.target.value,false));const postScene=new THREE.Scene(),postCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const postMat=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},k:{value:new THREE.Vector2(.24,.1)},aspect:{value:1},sa:{value:2},sep:{value:.21},zoom:{value:.8},guide:{value:0}},depthTest:false,depthWrite:false,
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-  fragmentShader:'uniform sampler2D tDiffuse;uniform vec2 k;uniform float aspect;varying vec2 vUv;void main(){float side=step(.5,vUv.x);vec2 e=vec2(fract(vUv.x*2.),vUv.y);vec2 c=(e-.5)*vec2(aspect,1.);float r2=dot(c,c);float f=1.+k.x*r2+k.y*r2*r2;vec2 s=.5+(e-.5)*f*.8;if(s.x<0.||s.x>1.||s.y<0.||s.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}gl_FragColor=texture2D(tDiffuse,vec2((s.x+side)*.5,s.y));}'});
+  fragmentShader:'uniform sampler2D tDiffuse;uniform vec2 k;uniform float aspect;uniform float sa;uniform float sep;uniform float zoom;uniform float guide;varying vec2 vUv;void main(){float side=step(.5,vUv.x);float cx=mix(.5-sep,.5+sep,side);vec2 c=vec2((vUv.x-cx)*sa,vUv.y-.5);float r2=dot(c,c)*4.;float f=1.+k.x*r2+k.y*r2*r2;vec2 cd=c*f*zoom;vec2 s=vec2(.5+cd.x/aspect,.5+cd.y);if(s.x<0.||s.x>1.||s.y<0.||s.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}vec4 col=texture2D(tDiffuse,vec2((s.x+side)*.5,s.y));if(guide>0.){float d=length(c);float cr=max(step(abs(c.x),.003)*step(abs(c.y),.06),step(abs(c.y),.003)*step(abs(c.x),.06));cr=max(cr,step(abs(d-.09),.004));col.rgb=mix(col.rgb,vec3(1.,.85,.2),cr*guide);}gl_FragColor=col;}'});
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),postMat));
 function ensureRT(W,H){if(rt&&rt.width===W&&rt.height===H)return;if(rt)rt.dispose();const RTC=renderer.capabilities.isWebGL2&&THREE.WebGLMultisampleRenderTarget?THREE.WebGLMultisampleRenderTarget:THREE.WebGLRenderTarget;rt=new RTC(W,H,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter});if(rt.samples!==undefined)rt.samples=4;rt.texture.encoding=THREE.sRGBEncoding;postMat.uniforms.tDiffuse.value=rt.texture;}
 function render(){
   const w=window.innerWidth,h=window.innerHeight;renderer.shadowMap.needsUpdate=sun.castShadow;
   uScale.value=h*renderer.getPixelRatio()/(2*Math.tan((stereo?camL.fov:camMono.fov)*D/2));
-  if(stereo&&lensOn){const ss=Math.min(1.25,3600/(w*renderer.getPixelRatio())),pr=renderer.getPixelRatio()*ss,W=Math.round(w*pr),H=Math.round(h*pr);ensureRT(W,H);rt.scissorTest=true;
+  if(stereo){const ss=Math.min(1.25,3600/(w*renderer.getPixelRatio())),pr=renderer.getPixelRatio()*ss,W=Math.round(w*pr),H=Math.round(h*pr);ensureRT(W,H);rt.scissorTest=true;
     for(const[cam,x]of[[camL,0],[camR,W/2]]){cam.fov=100;cam.aspect=(w/2)/h;cam.updateProjectionMatrix();rt.viewport.set(x,0,W/2,H);rt.scissor.set(x,0,W/2,H);renderer.setRenderTarget(null);renderer.setRenderTarget(rt);renderer.render(scene,cam);renderer.shadowMap.needsUpdate=false;}
-    renderer.setRenderTarget(null);postMat.uniforms.aspect.value=(w/2)/h;renderer.setViewport(0,0,w,h);renderer.render(postScene,postCam);}
-  else if(stereo){renderer.setScissorTest(true);for(const[cam,x]of[[camL,0],[camR,w/2]]){cam.fov=90;cam.aspect=(w/2)/h;cam.updateProjectionMatrix();renderer.setViewport(x,0,w/2,h);renderer.setScissor(x,0,w/2,h);renderer.render(scene,cam);renderer.shadowMap.needsUpdate=false;}renderer.setScissorTest(false);}
+    renderer.setRenderTarget(null);postMat.uniforms.aspect.value=(w/2)/h;postMat.uniforms.sa.value=w/h;postMat.uniforms.sep.value=clamp(((ipdMm/2)/MM_PER_PX)/w,.1,.25);
+    postMat.uniforms.k.value.set(lensOn?.24:0,lensOn?.1:0);postMat.uniforms.guide.value=performance.now()<guideUntil?1:0;renderer.setViewport(0,0,w,h);renderer.render(postScene,postCam);}
+  else if(false){renderer.setScissorTest(true);for(const[cam,x]of[[camL,0],[camR,w/2]]){cam.fov=90;cam.aspect=(w/2)/h;cam.updateProjectionMatrix();renderer.setViewport(x,0,w/2,h);renderer.setScissor(x,0,w/2,h);renderer.render(scene,cam);renderer.shadowMap.needsUpdate=false;}renderer.setScissorTest(false);}
   else{camMono.aspect=w/h;camMono.updateProjectionMatrix();renderer.setViewport(0,0,w,h);renderer.render(scene,camMono);}
 }
 function loop(now){
@@ -865,11 +877,13 @@ async function start(mode){
   try{await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]);}catch(e){}
   buildAssets();lastScreen='';
   $('#start').hidden=true;cap.hidden=stereo;hud.classList.toggle('off',stereo);$('#bPause').textContent='Pausar';
-  restart();started=true;running=true;last=0;
+  restart();started=true;running=true;last=0;guideUntil=performance.now()+5000;
   setTimeout(()=>{if(!gyro)showToast('Sem giroscópio aqui. Arraste o dedo para olhar em volta.');},1800);
 }
 $('#btnVR').addEventListener('click',()=>start('vr'));
 $('#btnFlat').addEventListener('click',()=>start('flat'));
+$('#bIpdM').addEventListener('click',()=>{setIpd(ipdMm-1,true);showHud();});
+$('#bIpdP').addEventListener('click',()=>{setIpd(ipdMm+1,true);showHud();});
 $('#bCenter').addEventListener('click',()=>{needCalib=true;dragYaw=0;dragPitch=0;showHud();});
 $('#bSkip').addEventListener('click',()=>{const n=SKIPS.find(s=>s>T+.5);if(n===undefined)restart();else jumpTo(n);running=true;$('#bPause').textContent='Pausar';if(ac)ac.resume();showHud();});
 $('#bPause').addEventListener('click',()=>{running=!running;$('#bPause').textContent=running?'Pausar':'Continuar';if(hasSpeech){running?speechSynthesis.resume():speechSynthesis.pause();}if(ac){running?ac.resume():ac.suspend();}showHud();});
