@@ -283,6 +283,14 @@ const blinkers=[];let screenTex,screenG;
   const big=new THREE.Mesh(new THREE.CylinderGeometry(.06,.07,.04,24),new THREE.MeshStandardMaterial({color:0xff2e2e,emissive:0xff2e2e,emissiveIntensity:.5}));big.position.set(.0,.045,.05);panel.add(big);
   const[c,g]=cnv(512,256);screenG=g;screenTex=tex(c);
   const scr=new THREE.Mesh(new THREE.PlaneGeometry(.52,.26),new THREE.MeshBasicMaterial({map:screenTex}));scr.rotation.x=-Math.PI/2;scr.position.set(-.4,.032,0);panel.add(scr);
+  /* console realista: troca o painel simples quando a imagem carrega */
+  const con=new THREE.Group();con.position.set(0,-.6,-.86);con.rotation.x=-50*D;con.visible=false;cockpit.add(con);
+  const conMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.55,roughness:.6});
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(.9,.9),conMat);con.add(face);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(.94,.94,.05),dark);back.position.z=-.03;con.add(back);
+  const scr2=new THREE.Mesh(new THREE.PlaneGeometry(.2,.105),new THREE.MeshBasicMaterial({map:screenTex}));scr2.position.set(.002,-.029,.003);con.add(scr2);
+  blinkers.push({material:conMat,userData:{ph:0},console:true});
+  new THREE.TextureLoader().load('img/painel-cabine.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=8;conMat.map=t;conMat.emissiveMap=t;conMat.needsUpdate=true;con.visible=true;panel.visible=false;},undefined,()=>{});
 }
 const toys=new THREE.Group();cockpit.add(toys);
 {
@@ -517,7 +525,7 @@ function apply(t,dt){
   /* contagem */
   if(assetsReady){if(t>=40&&t<53){countdown.visible=true;const n=t<50?10-Math.floor(t-40):'go';countdown.material.map=numTex[n];countdown.material.needsUpdate=true;const p=t<50?(t-40)%1:seg(t,50,51);countdown.scale.set(1.6*(1+.15*(1-p)),.8*(1+.15*(1-p)),1);}else countdown.visible=false;}
   /* cabine */
-  if(cockpit.visible){blinkers.forEach(b=>{b.material.emissiveIntensity=.25+.75*(Math.sin(t*3+b.userData.ph)>.3?1:0);});drawScreen(t);}
+  if(cockpit.visible){blinkers.forEach(b=>{b.material.emissiveIntensity=b.console?.5+.15*Math.sin(t*2.2):.25+.75*(Math.sin(t*3+b.userData.ph)>.3?1:0);});drawScreen(t);}
   if(toys.visible)toys.children.forEach(o=>{const i=o.userData.i;const a=t*.25+i*2.1;o.position.set(Math.sin(a)*(.65+.15*i),.05+Math.sin(t*.6+i)*.25,Math.cos(a)*(.65+.15*i)*.8);o.rotation.set(t*.4+i,t*.3,t*.2*i);});
   /* espaço */
   spinEarth(earthBig,Math.PI-BR+Math.sin(t*.05)*.15,t);moonBig.rotation.y=t*.01;
