@@ -319,7 +319,6 @@ const atmoMat=new THREE.ShaderMaterial({uniforms:{c:{value:new THREE.Color(0x7cc
 const cloudMat=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false,roughness:1});
 const TL=new THREE.TextureLoader();
 TL.load('img/terra.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=4;earthMat.map=t;earthMat.emissiveMap=t;earthMat.emissiveIntensity=.28;earthMat.needsUpdate=true;},undefined,()=>{});
-TL.load('img/nuvens-terra.jpg',t=>{cloudMat.alphaMap=t;cloudMat.opacity=.9;cloudMat.needsUpdate=true;},undefined,()=>{});
 function makeEarth(r){const g=new THREE.Group();const e=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),earthMat);const cl=new THREE.Mesh(new THREE.SphereGeometry(r*1.012,48,32),cloudMat);const a=new THREE.Mesh(new THREE.SphereGeometry(r*1.07,48,32),atmoMat);g.add(e,cl,a);g.userData.globe=e;g.userData.clouds=cl;return g;}
 const BR=.69; /* longitude do Brasil no mapa: girar o globo em (direção do olhar - BR) deixa o Brasil de frente */
 function spinEarth(E,rot,t){E.userData.globe.rotation.y=rot;E.userData.clouds.rotation.y=rot+t*.012;}
@@ -327,6 +326,11 @@ const earthBig=makeEarth(40);earthBig.position.set(0,-60,95);spaceWorld.add(eart
 const moonBig=new THREE.Mesh(new THREE.SphereGeometry(45,48,32),new THREE.MeshStandardMaterial({map:moonTex,roughness:1,emissiveMap:moonTex,emissive:0x555555,emissiveIntensity:.25}));
 TL.load('img/lua.jpg',t=>{t.encoding=THREE.sRGBEncoding;moonBig.material.map=t;moonBig.material.emissiveMap=t;moonBig.material.needsUpdate=true;},undefined,()=>{});moonBig.position.set(0,12,-430);spaceWorld.add(moonBig);
 const sunGlow=softSprite(0xfff4d0,1,true);sunGlow.scale.set(220,220,1);sunGlow.position.set(900,260,-200);spaceWorld.add(sunGlow);
+
+/* Via Láctea 360 somada ao céu preto (espaço, Lua e alto da decolagem) */
+const milky=new THREE.Mesh(new THREE.SphereGeometry(1400,48,24),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+milky.geometry.scale(-1,1,1);milky.rotation.set(.35,1.1,.2);milky.visible=false;scene.add(milky);
+TL.load('img/estrelas.jpg',t=>{t.encoding=THREE.sRGBEncoding;milky.material.map=t;milky.material.needsUpdate=true;milky.userData.ok=true;},undefined,()=>{});
 
 /* estrelas acompanham o jogador */
 const stars=new THREE.Group();scene.add(stars);
@@ -505,7 +509,7 @@ function apply(t,dt){
   else{let h=0;if(t>146&&t<159.6)h=Math.abs(Math.sin(Math.PI*(t-146)/1.7))*.8;P.set(0,1.45+h,0);}
   let sh=0;if(t>=48&&t<SW[1])sh=t<50?.006*seg(t,48,50):.035*(1-.7*seg(t,50,72));if(t>=112&&t<133.6)sh=.005;if(t>=133.6&&t<135)sh=.03*(1-seg(t,133.6,135));
   rig.position.set(P.x+(Math.random()-.5)*2*sh,P.y+(Math.random()-.5)*2*sh,P.z);
-  stars.position.copy(rig.position);
+  stars.position.copy(rig.position);milky.position.copy(rig.position);
   /* céu e luz */
   if(env===0){const k=clamp((P.y-60)/2600);const c=new THREE.Color(0x87c6f0);c.lerp(new THREE.Color(0x172660),clamp(k/.55)).lerp(new THREE.Color(0x000000),clamp((k-.55)/.45));
     scene.background=c;if(!scene.fog)scene.fog=new THREE.Fog(c,50,1000);starMat.opacity=clamp((k-.45)/.4);
@@ -515,6 +519,7 @@ function apply(t,dt){
     hemi.intensity=.9;sun.intensity=1;sun.position.copy(sunDir).multiplyScalar(100);}
   else{skyDome.visible=false;scene.background=new THREE.Color(0);scene.fog=null;starMat.opacity=1;hemi.intensity=env===1?.1:.22;sun.intensity=1.35;
     if(env===1)sun.position.set(100,40,60);else sun.position.copy(moonSunDir).multiplyScalar(100);}
+  milky.visible=!!milky.userData.ok&&starMat.opacity>.01;milky.material.opacity=starMat.opacity;
   moonDome.visible=env===2&&!!moonDome.userData.ok;if(moonDome.visible)moonDome.position.set(rig.position.x,rig.position.y-250,rig.position.z);
   /* fumaça, nuvens */
   if(env===0){const k=seg(t,49.5,62);smoke.forEach(s=>{const u=s.userData;const d=u.d+k*14;s.position.set(Math.cos(u.a)*d,u.h+k*6,Math.sin(u.a)*d);const sc=4+k*22;s.scale.set(sc,sc,1);s.material.opacity=t>=49.5?.85*(1-seg(t,66,72)*.5):0;});}
