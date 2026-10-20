@@ -348,7 +348,7 @@ const blinkers=[];let screenTex,screenG,apollo=false;
   const apMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.32,roughness:.55,metalness:.2,side:THREE.DoubleSide});
   const ap=new THREE.Mesh(new THREE.CylinderGeometry(1.32,1.02,.52,40,1,true,Math.PI-.95,1.9),apMat);ap.position.y=-.36;ap.visible=false;cockpit.add(ap);
   const scr3=new THREE.Mesh(new THREE.PlaneGeometry(.26,.13),new THREE.MeshBasicMaterial({map:screenTex,toneMapped:false}));scr3.position.set(0,-.12,-1.24);scr3.rotation.x=-.5;scr3.visible=false;cockpit.add(scr3);
-  new THREE.TextureLoader().load('img/painel-apollo.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=8;t.wrapS=THREE.RepeatWrapping;t.repeat.x=-1;t.offset.x=1;apMat.map=t;apMat.emissiveMap=t;apMat.needsUpdate=true;ap.visible=true;scr3.visible=true;con.visible=false;panel.visible=false;apollo=true;},undefined,()=>{});
+  if(false)new THREE.TextureLoader().load('img/painel-apollo.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=8;t.wrapS=THREE.RepeatWrapping;t.repeat.x=-1;t.offset.x=1;apMat.map=t;apMat.emissiveMap=t;apMat.needsUpdate=true;ap.visible=true;scr3.visible=true;con.visible=false;panel.visible=false;apollo=true;},undefined,()=>{});
   new THREE.TextureLoader().load('img/painel-cabine.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=8;conMat.map=t;conMat.emissiveMap=t;conMat.needsUpdate=true;if(!apollo){con.visible=true;panel.visible=false;}},undefined,()=>{});
 }
 const toys=new THREE.Group();cockpit.add(toys);
