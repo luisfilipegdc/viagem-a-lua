@@ -172,10 +172,10 @@ function moonCanvas(){
   return c;
 }
 function groundCanvas(){
-  const[c,g]=cnv(512,512);const R=rng(3);const cols=['#6fae4f','#86bd55','#5d9a44','#a8c262','#79b24f','#c9c46a'];
+  const[c,g]=cnv(512,512);const R=rng(3);const cols=['#7d8a34','#6f7f2e','#8a8b3c','#66782c','#7f8f3a','#94893f'];
   for(let y=0;y<8;y++)for(let x=0;x<8;x++){g.fillStyle=cols[(R()*cols.length)|0];g.fillRect(x*64,y*64,64,64);}
   g.strokeStyle='#8c8778';g.lineWidth=5;g.beginPath();g.moveTo(0,256);g.lineTo(512,256);g.moveTo(320,0);g.lineTo(320,512);g.stroke();
-  for(let i=0;i<180;i++){g.fillStyle='rgba(30,80,30,.7)';g.beginPath();g.arc(R()*512,R()*512,3+R()*4,0,7);g.fill();}
+  for(let i=0;i<180;i++){g.fillStyle='rgba(38,62,24,.75)';g.beginPath();g.arc(R()*512,R()*512,3+R()*4,0,7);g.fill();}
   return c;
 }
 function softCanvas(){const[c,g]=cnv(128,128);const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.4,'rgba(255,255,255,.6)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);return c;}
@@ -237,6 +237,13 @@ const rocket=buildRocket(false);padWorld.add(rocket);
 const smoke=[];{const R=rng(31);for(let i=0;i<18;i++){const s=softSprite(0xdedad2,0);const a=R()*6.28;s.userData={a,d:4+R()*6,h:.5+R()*4};padWorld.add(s);smoke.push(s);}}
 const clouds=[];{const R=rng(41);for(let i=0;i<90;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,opacity:.9}));
   const near=i<30;const a=R()*6.28,d=near?15+R()*45:60+R()*700;s.position.set(Math.cos(a)*d,180+R()*(near?700:900),Math.sin(a)*d);const sc=near?30+R()*40:80+R()*120;s.scale.set(sc*2,sc,1);padWorld.add(s);clouds.push(s);}}
+
+/* panorama 360 do céu da base (some com a altitude) */
+const skyDome=new THREE.Mesh(new THREE.SphereGeometry(4000,64,32),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false,depthWrite:false,fog:false}));
+skyDome.geometry.scale(-1,1,1);skyDome.rotation.y=-Math.PI/2;skyDome.renderOrder=-1;skyDome.visible=false;scene.add(skyDome);
+const HAZE=new THREE.Color(0xa6bfdc);
+const sunDir=(()=>{const u=.772,v=.243,ph=u*Math.PI*2,th=v*Math.PI;const d=new THREE.Vector3(Math.cos(ph)*Math.sin(th),Math.cos(th),Math.sin(ph)*Math.sin(th));return d.applyAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2).normalize();})();
+new THREE.TextureLoader().load('img/ceu-base.jpg',t=>{t.encoding=THREE.sRGBEncoding;skyDome.material.map=t;skyDome.material.needsUpdate=true;skyDome.userData.ok=true;},undefined,()=>{});
 
 /* plataforma do elevador presa ao jogador */
 const lift=new THREE.Group();rig.add(lift);
@@ -476,9 +483,12 @@ function apply(t,dt){
   stars.position.copy(rig.position);
   /* céu e luz */
   if(env===0){const k=clamp((P.y-60)/2600);const c=new THREE.Color(0x87c6f0);c.lerp(new THREE.Color(0x172660),clamp(k/.55)).lerp(new THREE.Color(0x000000),clamp((k-.55)/.45));
-    scene.background=c;if(!scene.fog)scene.fog=new THREE.Fog(c,50,1000);scene.fog.color.copy(c);scene.fog.far=900+P.y*1.6;starMat.opacity=clamp((k-.45)/.4);
-    hemi.intensity=.9;sun.intensity=.9;sun.position.set(30,60,20);}
-  else{scene.background=new THREE.Color(0);scene.fog=null;starMat.opacity=1;hemi.intensity=env===1?.1:.22;sun.intensity=1.35;sun.position.set(env===1?100:-60,env===1?40:50,env===1?60:30);}
+    scene.background=c;if(!scene.fog)scene.fog=new THREE.Fog(c,50,1000);starMat.opacity=clamp((k-.45)/.4);
+    const pano=!!skyDome.userData.ok;skyDome.visible=pano;
+    if(pano){skyDome.position.copy(rig.position);const dk=clamp(k/.6);skyDome.material.color.setScalar(1-dk);scene.fog.color.copy(HAZE).lerp(c,clamp(k/.4));scene.fog.near=120;scene.fog.far=1500+P.y*1.6;}
+    else{scene.fog.color.copy(c);scene.fog.near=50;scene.fog.far=900+P.y*1.6;}
+    hemi.intensity=.9;sun.intensity=1;sun.position.copy(sunDir).multiplyScalar(100);}
+  else{skyDome.visible=false;scene.background=new THREE.Color(0);scene.fog=null;starMat.opacity=1;hemi.intensity=env===1?.1:.22;sun.intensity=1.35;sun.position.set(env===1?100:-60,env===1?40:50,env===1?60:30);}
   /* fumaça, nuvens */
   if(env===0){const k=seg(t,49.5,62);smoke.forEach(s=>{const u=s.userData;const d=u.d+k*14;s.position.set(Math.cos(u.a)*d,u.h+k*6,Math.sin(u.a)*d);const sc=4+k*22;s.scale.set(sc,sc,1);s.material.opacity=t>=49.5?.85*(1-seg(t,66,72)*.5):0;});}
   /* chama */
