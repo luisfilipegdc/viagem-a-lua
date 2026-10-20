@@ -308,9 +308,16 @@ const atmoMat=new THREE.ShaderMaterial({uniforms:{c:{value:new THREE.Color(0x7cc
   vertexShader:'varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
   fragmentShader:'uniform vec3 c;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-max(dot(vN,vV),0.),2.2);gl_FragColor=vec4(c*f*1.4,f);}',
   transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
-function makeEarth(r){const g=new THREE.Group();const e=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),earthMat);const a=new THREE.Mesh(new THREE.SphereGeometry(r*1.07,48,32),atmoMat);g.add(e,a);g.userData.globe=e;return g;}
+const cloudMat=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false,roughness:1});
+const TL=new THREE.TextureLoader();
+TL.load('img/terra.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=4;earthMat.map=t;earthMat.emissiveMap=t;earthMat.emissiveIntensity=.28;earthMat.needsUpdate=true;},undefined,()=>{});
+TL.load('img/nuvens-terra.jpg',t=>{cloudMat.alphaMap=t;cloudMat.opacity=.9;cloudMat.needsUpdate=true;},undefined,()=>{});
+function makeEarth(r){const g=new THREE.Group();const e=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),earthMat);const cl=new THREE.Mesh(new THREE.SphereGeometry(r*1.012,48,32),cloudMat);const a=new THREE.Mesh(new THREE.SphereGeometry(r*1.07,48,32),atmoMat);g.add(e,cl,a);g.userData.globe=e;g.userData.clouds=cl;return g;}
+const BR=.69; /* longitude do Brasil no mapa: girar o globo em (direção do olhar - BR) deixa o Brasil de frente */
+function spinEarth(E,rot,t){E.userData.globe.rotation.y=rot;E.userData.clouds.rotation.y=rot+t*.012;}
 const earthBig=makeEarth(40);earthBig.position.set(0,-60,95);spaceWorld.add(earthBig);
-const moonBig=new THREE.Mesh(new THREE.SphereGeometry(45,48,32),new THREE.MeshStandardMaterial({map:moonTex,roughness:1,emissiveMap:moonTex,emissive:0x555555,emissiveIntensity:.25}));moonBig.position.set(0,12,-430);spaceWorld.add(moonBig);
+const moonBig=new THREE.Mesh(new THREE.SphereGeometry(45,48,32),new THREE.MeshStandardMaterial({map:moonTex,roughness:1,emissiveMap:moonTex,emissive:0x555555,emissiveIntensity:.25}));
+TL.load('img/lua.jpg',t=>{t.encoding=THREE.sRGBEncoding;moonBig.material.map=t;moonBig.material.emissiveMap=t;moonBig.material.needsUpdate=true;},undefined,()=>{});moonBig.position.set(0,12,-430);spaceWorld.add(moonBig);
 const sunGlow=softSprite(0xfff4d0,1,true);sunGlow.scale.set(220,220,1);sunGlow.position.set(900,260,-200);spaceWorld.add(sunGlow);
 
 /* estrelas acompanham o jogador */
@@ -327,9 +334,10 @@ function heightAt(x,z){let h=0;for(const[cx,cz,r]of craters){const d=Math.hypot(
   h+=Math.sin(x*.05)*.4+Math.cos(z*.043)*.4+Math.sin((x+z)*.21)*.08;const d0=Math.hypot(x,z);return h*clamp((d0-5)/12);}
 {
   const geo=new THREE.PlaneGeometry(1200,1200,160,160);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position;const col=new Float32Array(pos.count*3);const R=rng(66);
-  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);const h=heightAt(x,z);pos.setY(i,h);const v=.25+(R()-.5)*.05+clamp(h*.012,-.07,.05);col[i*3]=v;col[i*3+1]=v*.95;col[i*3+2]=v*.92;}
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);const h=heightAt(x,z);pos.setY(i,h);const v=.62+(R()-.5)*.06+clamp(h*.02,-.18,.08);col[i*3]=v;col[i*3+1]=v*.97;col[i*3+2]=v*.95;}
   geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.computeVertexNormals();
-  moonWorld.add(new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,flatShading:true})));
+  const surfMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1});moonWorld.add(new THREE.Mesh(geo,surfMat));
+  TL.load('img/chao-lua.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(400,400);t.anisotropy=8;surfMat.map=t;surfMat.needsUpdate=true;},undefined,()=>{});
   const rockM=new THREE.MeshStandardMaterial({color:0x8a877f,roughness:1,flatShading:true});
   for(let i=0;i<110;i++){const a=R()*6.28,d=5+Math.pow(R(),1.5)*120;const x=Math.cos(a)*d,z=Math.sin(a)*d;const s=.15+Math.pow(R(),3)*1.4;const r=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),rockM);r.position.set(x,heightAt(x,z)+s*.3,z);r.rotation.set(R()*3,R()*3,R()*3);moonWorld.add(r);}
 }
@@ -431,7 +439,7 @@ const EV=[
  [61,()=>say('Olha as nuvens passando pela janela!')],
  [66,()=>say('O céu está ficando escuro. Estamos chegando no espaço!')],
  [76,()=>say('Bem-vindo ao espaço! Aqui é bem quietinho. Agora vire e olhe para trás, pela janela de trás.')],
- [83,()=>say('Aquela bola azul e bonita é a Terra, a nossa casa! O azul é o mar, o verde são as florestas.')],
+ [83,()=>say('Aquela bola azul e bonita é a Terra, a nossa casa! O azul é o mar. E aquela parte verde é o Brasil, onde a gente mora!')],
  [91,()=>say('Olha! Os brinquedos estão flutuando aqui dentro. No espaço, tudo flutua!')],
  [98,()=>say('Agora olhe para frente. Está vendo aquela bola grande e cinza? É a Lua! Estamos chegando.')],
  [112,()=>say('Hora de pousar na Lua. Olhe para baixo. Bem devagar... devagarinho...')],
@@ -512,18 +520,18 @@ function apply(t,dt){
   if(cockpit.visible){blinkers.forEach(b=>{b.material.emissiveIntensity=.25+.75*(Math.sin(t*3+b.userData.ph)>.3?1:0);});drawScreen(t);}
   if(toys.visible)toys.children.forEach(o=>{const i=o.userData.i;const a=t*.25+i*2.1;o.position.set(Math.sin(a)*(.65+.15*i),.05+Math.sin(t*.6+i)*.25,Math.cos(a)*(.65+.15*i)*.8);o.rotation.set(t*.4+i,t*.3,t*.2*i);});
   /* espaço */
-  earthBig.userData.globe.rotation.y=t*.03;moonBig.rotation.y=t*.01;
+  spinEarth(earthBig,Math.PI-BR+Math.sin(t*.05)*.15,t);moonBig.rotation.y=t*.01;
   /* Lua */
   if(env===2){
     dust.forEach(s=>{const k=seg(t,129,140);const a=s.userData.a;const d=1.5+k*12;s.position.set(Math.cos(a)*d,.4+k*1.5,Math.sin(a)*d);s.scale.set(2+k*5,2+k*5,1);s.material.opacity=t>=129&&t<141?.7*Math.sin(Math.PI*k):0;});
-    skyEarth.userData.globe.rotation.y=t*.05;skyEarth.visible=t<165;
+    spinEarth(skyEarth,-.26-BR,t);skyEarth.visible=t<165;
   }
   /* mãos */
   hands.visible=t>=162;
   if(t>=162){if(handsYaw===null)handsYaw=headYaw();hands.rotation.y=handsYaw;endGroup.rotation.y=handsYaw;const s=eo3(seg(t,162,164));hands.scale.setScalar(Math.max(.001,s));}
   travelEarth.visible=env===2&&t>=165;
   if(travelEarth.visible){rig.updateMatrixWorld(true);anchor.getWorldPosition(B);A.copy(skyEarth.position);const k=eio(seg(t,165,175));const f=Math.pow(1-k,2.2);
-    travelEarth.position.copy(B).addScaledVector(A.sub(B),f);travelEarth.scale.setScalar(Math.exp(lerp(Math.log(6),Math.log(.085),k)));travelEarth.userData.globe.rotation.y=t*.6;
+    travelEarth.position.copy(B).addScaledVector(A.sub(B),f);travelEarth.scale.setScalar(Math.exp(lerp(Math.log(6),Math.log(.085),k)));{const a0=-.26-BR;let d=(handsYaw-BR)-a0;d=Math.atan2(Math.sin(d),Math.cos(d));spinEarth(travelEarth,a0+d*k+(k>=1?Math.sin((t-175)*.45)*.7:0),t);}
     if(k>=1)travelEarth.position.y+=Math.sin(t*1.6)*.012;
     const g=seg(t,173,177);handGlow.material.opacity=.55*g;sparkles.forEach((sp,i)=>{const a=sp.userData.a+t*.8;sp.position.set(Math.cos(a)*.13,Math.sin(t*2+i)*.05,Math.sin(a)*.13);sp.material.opacity=g*(.5+.5*Math.sin(t*4+i*1.3));});}
   /* fim */
