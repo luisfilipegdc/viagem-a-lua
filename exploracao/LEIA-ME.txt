@@ -1,0 +1,9 @@
+Viagem à Lua — Exploração Livre
+
+Abra index.html em um navegador com internet para carregar A-Frame.
+Para sensores em celulares, hospede em HTTPS (por exemplo GitHub Pages/Netlify).
+Use o botão Ativar sensores e permita acesso quando solicitado.
+Modo VR depende de suporte do navegador; no Safari iOS pode não funcionar.
+Use os botões de destinos ou mire por 2 segundos nos anéis azuis.
+Experiência demonstrativa: modelos estilizados, sem colisões físicas, sem rastreamento de caminhada.
+Para crianças de 5 anos, priorize tela/projeção, com supervisão, respeitando recomendações etárias do visor.
