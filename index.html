@@ -577,7 +577,8 @@ const flag=new THREE.Group();{const pole=new THREE.Mesh(new THREE.CylinderGeomet
   const Rf=rng(71);for(let k=0;k<3;k++){let x=3.2,z=5.5,a=Math.PI+k*1.9;for(let i=0;i<18;i++){x+=Math.sin(a)*.42;z+=Math.cos(a)*.42;a+=(Rf()-.5)*.35;const fp=new THREE.Mesh(pg,pm);fp.position.set(x+(i%2?.12:-.12)*Math.cos(a),heightAt(x,z)+.015,z-(i%2?.12:-.12)*Math.sin(a));fp.rotation.y=a;if(Math.hypot(x-3.2,z-5.5)>2.6)moonWorld.add(fp);}}}
 flag.position.set(-1.6,0,-4.6);flag.rotation.y=.35;moonWorld.add(flag);flag.traverse(o=>{if(o.isMesh)o.castShadow=true;});
 moonWorld.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-const skyEarth=makeEarth(6);skyEarth.position.set(22,42,-82);moonWorld.add(skyEarth);
+const skyEarth=makeEarth(7.5);const EOFF=new THREE.Vector3(18,26,-62);skyEarth.position.copy(EOFF);scene.add(skyEarth);
+const HOLD=161.9;let earthCalled=false,exploreT=0,lastHint=0;
 const travelEarth=makeEarth(1);scene.add(travelEarth);
 const moonSun=softSprite(0xfff6e0,1,true);moonSun.scale.set(150,150,1);moonSun.position.copy(moonSunDir).multiplyScalar(900);moonWorld.add(moonSun);
 const moonSunCore=softSprite(0xffffff,1,true);moonSunCore.scale.set(45,45,1);moonSunCore.position.copy(moonSun.position);moonWorld.add(moonSunCore);
@@ -843,7 +844,7 @@ const EV=[
  [142,()=>say('Saímos do foguete! Olhe para baixo: o chão da Lua é cinza, cheio de pedrinhas e buracos.')],
  [148,()=>say('Aqui a gente fica levinho. Marche bem devagar no lugar, e você vai andar pela Lua!')],
  [155,()=>say('Olhe para trás: lá está o nosso foguete. E ali na frente, a bandeira do Brasil!')],
- [160,()=>say('Agora olhe para o céu. Está vendo a Terra, lá longe?')],
+ [157.5,()=>say('Agora você pode andar pela Lua o quanto quiser! Olhe para o céu: aquela bola azul é a Terra, a nossa casa. Quando quiser levar a Terra com você, olhe bem fixo para ela.')],
  [164,()=>say('Estique as suas mãos para frente. A Terra vai vir até você!')],
  [176,()=>{chime();say('Olhe para as suas mãos. A Terra está nas suas mãos! Daqui ela parece pequenininha.');}],
  [184,()=>say('Todo mundo que você ama mora nela: sua família, seus amigos, sua escola. Vamos cuidar bem dela?')],
@@ -851,7 +852,7 @@ const EV=[
  [ROOM_END+1,()=>{if(camMode){chime();say('Voltamos para a sala! Olhe para as suas mãos: você trouxe a Terra com você.');}}],
  [ROOM_END+9,()=>{if(camMode)say('Missão cumprida! Agora pode tirar os óculos bem devagarinho.');}]
 ];
-const SKIPS=[0,8.6,27,40,76,112,142,160,END];
+const SKIPS=[0,8.6,27,40,76,112,142,157,END];
 
 /* ---------- olhar: giroscópio ou arrastar ---------- */
 let ori=null,gyro=false,needCalib=true,dragYaw=0,dragPitch=0;
@@ -880,7 +881,7 @@ const hud=$('#hud'),toast=$('#toast'),rotateEl=$('#rotate');let hudTimer=0,toast
 function showHud(){hud.classList.remove('off');clearTimeout(hudTimer);if(stereo)hudTimer=setTimeout(()=>hud.classList.add('off'),3500);}
 function showToast(msg){toast.textContent=msg;toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,4000);}
 
-function jumpTo(t){T=Math.max(camMode?-10:0,t-.01);walk.x=walk.z=0;evIdx=EV.findIndex(e=>e[0]>=T);if(evIdx<0)evIdx=EV.length;if(hasSpeech)speechSynthesis.cancel();if(t<162)handsYaw=null;gaze=0;}
+function jumpTo(t){T=Math.max(camMode?-10:0,t-.01);walk.x=walk.z=0;evIdx=EV.findIndex(e=>e[0]>=T);if(evIdx<0)evIdx=EV.length;if(hasSpeech)speechSynthesis.cancel();if(t<162){handsYaw=null;earthCalled=false;exploreT=0;lastHint=0;}gaze=0;}
 function restart(){needCalib=true;dragYaw=0;dragPitch=0;jumpTo(camMode?-10:0);}
 
 const P=new THREE.Vector3(),A=new THREE.Vector3(),B=new THREE.Vector3(),hp=new THREE.Vector3();
@@ -895,10 +896,10 @@ function apply(t,dt){
   else if(t<SW[2])P.set(0,0,-330*eio(seg(t,75,110)));
   else if(t<SW[3])P.set(0,2.1+68*(1-eo3(seg(t,112,134))),0);
   else{let h=0;if(t>146&&t<159.6)h=Math.abs(Math.sin(Math.PI*(t-146)/1.7))*.8;
-    const canWalk=env===2&&t>=SW[3]+1&&t<ROOM_END&&dt>0,nowMs=performance.now();
+    const canWalk=env===2&&t>=SW[3]+1&&t<ROOM_END&&dt>0&&!earthCalled,nowMs=performance.now();
     let walking=canWalk&&(nowMs<walkUntil||keyWalk||holdWalk);
     if(canWalk&&(keyWalk||holdWalk)){autoStep+=dt;if(autoStep>.5){autoStep=0;stepPending++;}}
-    if(walking){const y=headYaw();walk.x+=-Math.sin(y)*1.1*dt;walk.z+=-Math.cos(y)*1.1*dt;const r=Math.hypot(walk.x,walk.z);if(r>14){walk.x*=14/r;walk.z*=14/r;}
+    if(walking){const y=headYaw();walk.x+=-Math.sin(y)*1.1*dt;walk.z+=-Math.cos(y)*1.1*dt;const r=Math.hypot(walk.x,walk.z);if(r>45){walk.x*=45/r;walk.z*=45/r;}
       const lx=walk.x-3.2,lz=walk.z-5.5,ld=Math.hypot(lx,lz);if(ld<3.2){walk.x=3.2+lx/ld*3.2;walk.z=5.5+lz/ld*3.2;}}
     P.set(walk.x,1.45+h+heightAt(walk.x,walk.z),walk.z);}
   let sh=0;if(t>=48&&t<SW[1])sh=t<50?.006*seg(t,48,50):.035*(1-.7*seg(t,50,72));if(t>=112&&t<133.6)sh=.005;if(t>=133.6&&t<135)sh=.03*(1-seg(t,133.6,135));
@@ -918,6 +919,7 @@ function apply(t,dt){
   if(env===0&&sun.castShadow){sun.position.copy(sunDir).multiplyScalar(60).add(new THREE.Vector3(0,0,2));sun.target.position.set(0,6,2);sun.target.updateMatrixWorld();sun.shadow.camera.left=sun.shadow.camera.bottom=-22;sun.shadow.camera.right=sun.shadow.camera.top=22;sun.shadow.camera.updateProjectionMatrix();}
   else if(env===2){sun.shadow.camera.left=sun.shadow.camera.bottom=-14;sun.shadow.camera.right=sun.shadow.camera.top=14;sun.shadow.camera.updateProjectionMatrix();}if(env===2){sun.position.copy(moonSunDir).multiplyScalar(40).add(rig.position);sun.target.position.copy(rig.position);sun.target.updateMatrixWorld();}
   milky.visible=!!milky.userData.ok&&starMat.opacity>.01;milky.material.opacity=starMat.opacity*(env===2?.32:env===1?.8:.6);
+  skyEarth.visible=env===2&&t<165&&!(camMode&&t>=ROOM_END);
   moonDome.visible=env===2&&!!moonDome.userData.ok;if(moonDome.visible)moonDome.position.set(rig.position.x,rig.position.y-250,rig.position.z);
   /* fumaça, nuvens */
   if(false){const k=seg(t,49.5,62);smoke.forEach(s=>{const u=s.userData;const d=u.d+k*14;s.position.set(Math.cos(u.a)*d,u.h+k*6,Math.sin(u.a)*d);const sc=4+k*22;s.scale.set(sc,sc,1);s.material.opacity=t>=49.5?.85*(1-seg(t,66,72)*.5):0;});}
@@ -941,7 +943,7 @@ function apply(t,dt){
   /* Lua */
   if(env===2){
     dust.forEach(s=>{const k=seg(t,129,140);const a=s.userData.a;const d=1.5+k*12;s.position.set(Math.cos(a)*d,.4+k*1.5,Math.sin(a)*d);s.scale.set(2+k*5,2+k*5,1);s.material.opacity=t>=129&&t<141?.7*Math.sin(Math.PI*k):0;});
-    spinEarth(skyEarth,-.26-BR,t);skyEarth.visible=t<165;
+    spinEarth(skyEarth,-.26-BR,t);skyEarth.position.copy(rig.position).add(EOFF);
   }
   /* mãos */
   hands.visible=t>=162;
@@ -994,8 +996,14 @@ function loop(now){
   const dt=Math.min(.1,(now-(last||now))/1000);last=now;
   const portrait=stereo&&window.innerHeight>window.innerWidth;
   if(rotateEl.hidden===portrait){rotateEl.hidden=!portrait;if(!portrait)needCalib=true;}
-  if(running&&!portrait){T+=dt;while(evIdx<EV.length&&EV[evIdx][0]<=T){EV[evIdx][1]();evIdx++;}}
-  updateHead();apply(T,running?dt:0);render();
+  const holding=T>=HOLD&&!earthCalled;
+  if(running&&!portrait){if(holding)exploreT+=dt;else T+=dt;while(evIdx<EV.length&&EV[evIdx][0]<=T){EV[evIdx][1]();evIdx++;}}
+  updateHead();apply(T,running?dt:0);
+  if(holding&&reticle&&running){rig.updateMatrixWorld(true);head.getWorldPosition(hp);A.copy(skyEarth.position).sub(hp).normalize();vTmp.set(0,0,-1).applyQuaternion(head.quaternion);
+    const on=vTmp.angleTo(A)<.2;gaze=on?gaze+dt:Math.max(0,gaze-dt*1.5);reticle.visible=true;drawReticle(clamp(gaze/2.5));
+    if(gaze>=2.5){gaze=0;earthCalled=true;handsYaw=null;chime();reticle.visible=false;}
+    if(exploreT-lastHint>40){lastHint=exploreT;say('Quando quiser, olhe bem fixo para a Terra lá no céu, e ela vem até as suas mãos.');}}
+  render();
 }
 function resize(){renderer.setSize(window.innerWidth,window.innerHeight,false);}
 window.addEventListener('resize',resize);resize();
@@ -1028,7 +1036,7 @@ $('#bFull').addEventListener('click',()=>{const de=document.documentElement,on=d
   try{if(on)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else{const req=de.requestFullscreen||de.webkitRequestFullscreen;if(!req)throw 0;const p=req.call(de);if(p&&p.then)p.then(()=>{try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>showToast('No iPhone: Compartilhar → Adicionar à Tela de Início.'));}}
   catch(e){showToast('No iPhone: Compartilhar → Adicionar à Tela de Início.');}showHud();});
 $('#bCenter').addEventListener('click',()=>{needCalib=true;dragYaw=0;dragPitch=0;showHud();});
-$('#bSkip').addEventListener('click',()=>{const n=SKIPS.find(s=>s>T+.5);if(n===undefined)restart();else jumpTo(n);running=true;$('#bPause').textContent='Pausar';if(ac)ac.resume();showHud();});
+$('#bSkip').addEventListener('click',()=>{if(T>=HOLD&&!earthCalled){earthCalled=true;handsYaw=null;showHud();return;}const n=SKIPS.find(s=>s>T+.5);if(n===undefined)restart();else jumpTo(n);running=true;$('#bPause').textContent='Pausar';if(ac)ac.resume();showHud();});
 $('#bPause').addEventListener('click',()=>{running=!running;$('#bPause').textContent=running?'Pausar':'Continuar';if(hasSpeech){running?speechSynthesis.resume():speechSynthesis.pause();}if(ac){running?ac.resume():ac.suspend();}showHud();});
 $('#bExit').addEventListener('click',()=>{started=false;running=false;stopCamera();if(hasSpeech)speechSynthesis.cancel();if(ac)ac.suspend();try{document.fullscreenElement&&document.exitFullscreen();}catch(e){}$('#start').hidden=false;cap.hidden=true;rotateEl.hidden=true;hud.classList.add('off');});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started&&running){running=false;$('#bPause').textContent='Continuar';if(hasSpeech)speechSynthesis.cancel();if(ac)ac.suspend();hud.classList.remove('off');}});
