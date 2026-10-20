@@ -297,6 +297,9 @@ const countdown=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,dept
 const flame=new THREE.Group();rig.add(flame);
 {[[0xfff1b0,3,1],[0xffa040,5,.9],[0xff5a1f,7,.7]].forEach(([c,s,o],i)=>{const sp=softSprite(c,o,true);sp.scale.set(s,s*1.8,1);sp.position.y=-i*1.6;sp.userData.s=s;flame.add(sp);});
   const fl=new THREE.PointLight(0xff8a3d,2,40);fl.position.y=1;flame.add(fl);}
+const plume=new THREE.Group();flame.add(plume);
+new THREE.TextureLoader().load('img/fogo.jpg',t=>{t.encoding=THREE.sRGBEncoding;const m=new THREE.MeshBasicMaterial({map:t,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+  const geo=new THREE.PlaneGeometry(4.6,11);geo.translate(0,-5.5+.6,0);for(let i=0;i<3;i++){const p=new THREE.Mesh(geo,m);p.rotation.y=i*Math.PI/3;plume.add(p);}},undefined,()=>{});
 
 /* ---------- mundo 2: espaço ---------- */
 const spaceWorld=new THREE.Group();scene.add(spaceWorld);
@@ -501,7 +504,8 @@ function apply(t,dt){
   if(env===0){const k=seg(t,49.5,62);smoke.forEach(s=>{const u=s.userData;const d=u.d+k*14;s.position.set(Math.cos(u.a)*d,u.h+k*6,Math.sin(u.a)*d);const sc=4+k*22;s.scale.set(sc,sc,1);s.material.opacity=t>=49.5?.85*(1-seg(t,66,72)*.5):0;});}
   /* chama */
   flame.visible=(t>=49.5&&t<SW[1])||(t>=112&&t<133.6);flame.position.y=env===2?-2.6:-11.6;
-  flame.children.forEach((s,i)=>{if(s.isSprite){const f=.8+Math.random()*.35;const base=s.userData.s*(env===2?.35:1);s.scale.set(base*f,base*1.8*f,1);}});
+  flame.children.forEach((s,i)=>{if(s.isSprite){const f=.8+Math.random()*.35;const base=s.userData.s*(env===2?.35:1)*(plume.children.length?.7:1);s.scale.set(base*f,base*1.8*f,1);}});
+  {const m=env===2?.35:1,f=.92+Math.random()*.16;plume.scale.set(m*(.95+Math.random()*.1),m*f,m*(.95+Math.random()*.1));plume.rotation.y+=.9*dt;}
   /* contagem */
   if(assetsReady){if(t>=40&&t<53){countdown.visible=true;const n=t<50?10-Math.floor(t-40):'go';countdown.material.map=numTex[n];countdown.material.needsUpdate=true;const p=t<50?(t-40)%1:seg(t,50,51);countdown.scale.set(1.6*(1+.15*(1-p)),.8*(1+.15*(1-p)),1);}else countdown.visible=false;}
   /* cabine */
