@@ -48,6 +48,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 .toggle{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--muted)}
 .opts{display:grid;gap:10px}
 .ipd{display:grid;gap:6px;color:var(--muted);font-weight:700}.ipd b{color:var(--moon)}.ipd input{width:100%;accent-color:var(--flame)}.ipd small{font-weight:400;line-height:1.4}
+.vrow{display:flex;gap:8px}.vrow select{flex:1;min-width:0;font:700 .95rem var(--body);padding:8px;border-radius:10px;background:var(--deep);color:var(--ink);border:1px solid var(--line)}.vrow button{font:800 .95rem var(--body);padding:8px 14px;border-radius:10px;border:0;background:var(--moon);color:#1b1630;cursor:pointer}
 .toggle input{width:20px;height:20px;accent-color:var(--flame)}
 .steps{margin:0;padding:16px 18px 16px 38px;border:1px solid var(--line);border-radius:16px;background:rgba(20,27,63,.55);display:grid;gap:8px;line-height:1.45}
 .steps li::marker{color:var(--flame);font-weight:800}
@@ -91,6 +92,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
     </div>
     <div class="opts">
       <label class="toggle"><input type="checkbox" id="narr" checked> Narração em voz</label>
+      <div class="ipd" hidden><label for="voiceSel">Voz da narradora (★ = mais natural)</label><div class="vrow"><select id="voiceSel"></select><button type="button" id="voiceTest">Ouvir</button></div></div>
       <label class="toggle" hidden><input type="checkbox" id="cam"> Começar e terminar na sala de aula (câmera)</label>
       <label class="toggle"><input type="checkbox" id="lens" checked> Correção das lentes do Shinecon</label>
       <div class="ipd">
@@ -126,6 +128,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 <div id="rotate" hidden><div class="phone" aria-hidden="true"></div><p>Deite o celular para começar a viagem</p></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -247,17 +250,18 @@ function buildRocket(legs){
   cyl(1.6,1.45,.6,11.1,white);
   const cap=cyl(1.45,.82,2.2,12.5,silver);cyl(.82,.62,.3,13.75,dark);
   // janela da cápsula voltada para o elevador
-  const win=new THREE.Mesh(new THREE.CircleGeometry(.28,24),glass);const wr=1.16;win.position.set(0,12.55,wr+.012);win.rotation.x=-Math.atan2(.63,2.2);g.add(win);
+  const win=new THREE.Mesh(new THREE.CircleGeometry(.28,24),glass);const wr=1.45-.63*((12.55-11.4)/2.2);win.position.set(0,12.55,wr+.008);win.rotation.x=-Math.atan2(.63,2.2);g.add(win);
   const fr=new THREE.Mesh(new THREE.TorusGeometry(.3,.04,8,28),dark);fr.position.copy(win.position);fr.rotation.copy(win.rotation);g.add(fr);
   // torre de escape
-  for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;const st=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.5,6),dark);st.position.set(Math.cos(a)*.35,14.6,Math.sin(a)*.35);st.rotation.set(Math.sin(a)*.2,0,-Math.cos(a)*.2);g.add(st);}
+  const rodR=(p1,p2,r,m)=>{const l=p1.distanceTo(p2);const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,8),m);o.position.copy(p1).add(p2).multiplyScalar(.5);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),p2.clone().sub(p1).normalize());g.add(o);};
+  for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;rodR(new THREE.Vector3(Math.cos(a)*.55,13.85,Math.sin(a)*.55),new THREE.Vector3(Math.cos(a)*.2,15.35,Math.sin(a)*.2),.03,dark);}
   const esc=cyl(.18,.24,1.6,16.1,white,20);const tip=new THREE.Mesh(new THREE.ConeGeometry(.18,.6,20),dark);tip.position.y=17.2;g.add(tip);
   // saia, aletas e 5 motores
   cyl(1.6,1.85,.8,.6,dark);
   for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;const f=new THREE.Mesh(new THREE.BoxGeometry(.12,1.6,1.1),dark);f.position.set(Math.sin(a)*2.05,.95,Math.cos(a)*2.05);f.rotation.y=a;g.add(f);}
   const eng=(x,z)=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(.3,.55,.9,24,1,true),bell);b.position.set(x,-.25,z);g.add(b);const th=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,.3,16),silver);th.position.set(x,.3,z);g.add(th);};
   eng(0,0);for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;eng(Math.cos(a)*.95,Math.sin(a)*.95);}
-  g.position.y=.6;
+  g.position.y=1.6;
   return g;
 }
 
@@ -318,7 +322,7 @@ const padWorld=new THREE.Group();scene.add(padWorld);
   for(const x of[-1,1])for(const z of[-3.2,-4.9]){const p=new THREE.Mesh(new THREE.BoxGeometry(.24,20,.24),tower);p.position.set(x,10,z);padWorld.add(p);}
   for(let y=1.5;y<20;y+=1.6){const b1=new THREE.Mesh(new THREE.BoxGeometry(2.2,.12,.12),tower);b1.position.set(0,y,-3.2);padWorld.add(b1);const b2=b1.clone();b2.position.z=-4.9;padWorld.add(b2);
     for(const x of[-1,1]){const s=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,1.8),tower);s.position.set(x,y,-4.05);padWorld.add(s);}}
-  gantryArm=new THREE.Mesh(new THREE.BoxGeometry(.8,.25,1.7),tower);gantryArm.position.set(0,13.6,-2.4);padWorld.add(gantryArm);
+  gantryArm=new THREE.Mesh(new THREE.BoxGeometry(.8,.25,1.7),tower);gantryArm.position.set(0,14.6,-2.4);padWorld.add(gantryArm);
   beacon=softSprite(0xff3b30,1,true);beacon.scale.set(1.6,1.6,1);beacon.position.set(0,20.3,-4.05);padWorld.add(beacon);
   const R=rng(21);
   const leaf=new THREE.MeshLambertMaterial({color:0x2f7d3a}),trunk=new THREE.MeshLambertMaterial({color:0x4a3524});
@@ -387,6 +391,10 @@ const padWorld=new THREE.Group();scene.add(padWorld);
     h.position.set(Math.cos(a)*d,0,Math.sin(a)*d);h.rotation.y=R()*6;padWorld.add(h);}
 }
 const rocket=buildRocket(false);padWorld.add(rocket);
+{const mm=new THREE.MeshStandardMaterial({color:0x5b5f66,roughness:.7,metalness:.5});const deck=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.8,.25,8),mm);deck.position.y=1.08;padWorld.add(deck);
+  const hole=new THREE.Mesh(new THREE.CircleGeometry(1.5,24),new THREE.MeshBasicMaterial({color:0x050505}));hole.rotation.x=-Math.PI/2;hole.position.y=1.215;padWorld.add(hole);
+  for(let i=0;i<8;i++){const a=i/8*6.28;const leg=new THREE.Mesh(new THREE.BoxGeometry(.3,.5,.3),mm);leg.position.set(Math.cos(a)*2.4,.72,Math.sin(a)*2.4);padWorld.add(leg);}
+  for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;const hd=new THREE.Mesh(new THREE.BoxGeometry(.35,.55,.35),mm);hd.position.set(Math.cos(a)*1.95,1.45,Math.sin(a)*1.95);padWorld.add(hd);}}
 padWorld.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh){o.castShadow=o.geometry.type!=='PlaneGeometry';o.receiveShadow=true;}});
 const smoke=[];{const R=rng(31);for(let i=0;i<18;i++){const s=softSprite(0xdedad2,0);const a=R()*6.28;s.userData={a,d:4+R()*6,h:.5+R()*4};padWorld.add(s);smoke.push(s);}}
 const clouds=[];{const R=rng(41);for(let i=0;i<90;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,opacity:.9}));
@@ -405,9 +413,9 @@ new THREE.TextureLoader().load('img/ceu-base.jpg',t=>{t.encoding=THREE.sRGBEncod
 
 /* poço do elevador ao lado do foguete (luzes passam enquanto sobe) */
 {const m=new THREE.MeshStandardMaterial({color:0x9aa3b5,metalness:.6,roughness:.4}),lm=new THREE.MeshBasicMaterial({color:0x7fe0ff});
-  for(const x of[-.88,.88])for(const z of[2.52,4.28]){const p=new THREE.Mesh(new THREE.BoxGeometry(.1,14,.1),m);p.position.set(x,7,z);padWorld.add(p);}
+  for(const x of[-.88,.88])for(const z of[2.52,4.28]){const p=new THREE.Mesh(new THREE.BoxGeometry(.1,15,.1),m);p.position.set(x,7.5,z);padWorld.add(p);}
   for(let y=2;y<14;y+=2){for(const x of[-.88,.88]){const b=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,1.76),m);b.position.set(x,y,3.4);padWorld.add(b);}const bb=new THREE.Mesh(new THREE.BoxGeometry(1.76,.06,.06),m);bb.position.set(0,y,2.52);padWorld.add(bb);}
-  for(let y=1;y<14;y+=1)for(const x of[-.88,.88]){const l=new THREE.Mesh(new THREE.BoxGeometry(.04,.12,.04),lm);l.position.set(x*1.07,y,4.28);padWorld.add(l);}}
+  for(let y=1;y<15;y+=1)for(const x of[-.88,.88]){const l=new THREE.Mesh(new THREE.BoxGeometry(.04,.12,.04),lm);l.position.set(x*1.07,y,4.28);padWorld.add(l);}}
 
 /* plataforma do elevador presa ao jogador */
 const lift=new THREE.Group();padWorld.add(lift);lift.position.set(0,2.1,3.4);
@@ -554,6 +562,9 @@ const atmoMat=new THREE.ShaderMaterial({uniforms:{c:{value:new THREE.Color(0x7cc
   transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
 const cloudMat=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false,roughness:1});
 const TL=new THREE.TextureLoader();
+function loadModel(url,size,axis,cb){if(!THREE.GLTFLoader)return;try{new THREE.GLTFLoader().load(url,gl=>{const m=gl.scene;const b=new THREE.Box3().setFromObject(m),sz=new THREE.Vector3(),c=new THREE.Vector3();b.getSize(sz);b.getCenter(c);
+  const ref=axis==='y'?sz.y:Math.max(sz.x,sz.y,sz.z);const k=size/ref;m.scale.setScalar(k);m.position.set(-c.x*k,-b.min.y*k,-c.z*k);const w=new THREE.Group();w.add(m);
+  m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material&&o.material.map)o.material.map.anisotropy=8;}});cb(w);},undefined,()=>{});}catch(e){}}
 TL.load('img/terra.jpg',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=8;earthMat.map=t;earthMat.emissiveMap=t;earthMat.emissiveIntensity=.28;earthMat.needsUpdate=true;},undefined,()=>{});
 function makeEarth(r){const g=new THREE.Group();const e=new THREE.Mesh(new THREE.SphereGeometry(r,48,32),earthMat);const cl=new THREE.Mesh(new THREE.SphereGeometry(r*1.012,48,32),cloudMat);const a=new THREE.Mesh(new THREE.SphereGeometry(r*1.07,48,32),atmoMat);g.add(e,cl,a);g.userData.globe=e;g.userData.clouds=cl;return g;}
 const BR=.69; /* longitude do Brasil no mapa: girar o globo em (direção do olhar - BR) deixa o Brasil de frente */
@@ -598,7 +609,10 @@ function heightAt(x,z){let h=0;for(const[cx,cz,r]of craters){const d=Math.hypot(
   {const n=520;const im=new THREE.InstancedMesh(geos[2],rockMat,n);for(let i=0;i<n;i++){const a=R()*6.28,d=1.2+Math.pow(R(),.9)*16;const x=Math.cos(a)*d,z=Math.sin(a)*d;const sc=.015+Math.pow(R(),2)*.06;
       o.position.set(x,heightAt(x,z),z);o.rotation.set(R(),R()*6.28,R());o.scale.set(sc,sc,sc);o.updateMatrix();im.setMatrixAt(i,o.matrix);}moonWorld.add(im);}
 }
-const lander=buildLM();lander.position.set(3.2,heightAt(3.2,5.5),5.5);lander.rotation.y=Math.atan2(-3.2,-5.5);moonWorld.add(lander);lander.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+const lander=buildLM();lander.position.set(3.2,heightAt(3.2,5.5),5.5);lander.rotation.y=Math.atan2(-3.2,-5.5);
+loadModel('models/modulo-lunar.glb',6.2,'y',w=>{while(lander.children.length)lander.remove(lander.children[0]);lander.add(w);});
+const BUD=[1.8,-14.2],WALK_TO=[0.2,-11.6];const buddy=new THREE.Group();buddy.position.set(BUD[0],heightAt(BUD[0],BUD[1]),BUD[1]);buddy.rotation.y=Math.atan2(WALK_TO[0]-BUD[0],WALK_TO[1]-BUD[1]);moonWorld.add(buddy);
+loadModel('models/astronauta.glb',1.85,'y',w=>{buddy.add(w);});moonWorld.add(lander);lander.traverse(o=>{if(o.isMesh)o.castShadow=true;});
 const flag=new THREE.Group();{const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.3,8),new THREE.MeshStandardMaterial({color:0xdddddd,metalness:.6,roughness:.3}));pole.position.y=1.15;
   const fg=new THREE.PlaneGeometry(1.2,.84,24,12);{const pp=fg.attributes.position;for(let i=0;i<pp.count;i++){const x=pp.getX(i),y=pp.getY(i);pp.setZ(i,Math.sin((x+.6)*7.5)*.035*(x+.6)+Math.sin(y*9+x*4)*.012);}fg.computeVertexNormals();}
   const f=new THREE.Mesh(fg,new THREE.MeshStandardMaterial({map:tex(flagCanvas()),side:THREE.DoubleSide,roughness:.8}));f.position.set(.62,1.84,0);
@@ -606,7 +620,7 @@ const flag=new THREE.Group();{const pole=new THREE.Mesh(new THREE.CylinderGeomet
 {const[c,g]=cnv(128,256);g.fillStyle='rgba(40,38,35,.55)';g.beginPath();g.ellipse(64,128,40,110,0,0,7);g.fill();g.strokeStyle='rgba(20,20,18,.6)';g.lineWidth=6;for(let y=40;y<230;y+=16){g.beginPath();g.moveTo(32,y);g.lineTo(96,y);g.stroke();}
   const pm=new THREE.MeshStandardMaterial({map:tex(c),transparent:true,depthWrite:false,roughness:1,polygonOffset:true,polygonOffsetFactor:-2});const pg=new THREE.PlaneGeometry(.14,.3);pg.rotateX(-Math.PI/2);
   const Rf=rng(71);for(let k=0;k<3;k++){let x=3.2,z=5.5,a=Math.PI+k*1.9;for(let i=0;i<18;i++){x+=Math.sin(a)*.42;z+=Math.cos(a)*.42;a+=(Rf()-.5)*.35;const fp=new THREE.Mesh(pg,pm);fp.position.set(x+(i%2?.12:-.12)*Math.cos(a),heightAt(x,z)+.015,z-(i%2?.12:-.12)*Math.sin(a));fp.rotation.y=a;if(Math.hypot(x-3.2,z-5.5)>2.6)moonWorld.add(fp);}}}
-flag.position.set(-1.6,0,-4.6);flag.rotation.y=.35;moonWorld.add(flag);flag.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+flag.position.set(-1.2,heightAt(-1.2,-15),-15);flag.rotation.y=.25;moonWorld.add(flag);flag.traverse(o=>{if(o.isMesh)o.castShadow=true;});
 moonWorld.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
 const skyEarth=makeEarth(7.5);const EOFF=new THREE.Vector3(18,26,-62);skyEarth.position.copy(EOFF);scene.add(skyEarth);
 const HOLD=161.9;let earthCalled=false,exploreT=0,lastHint=0;
@@ -708,7 +722,7 @@ const cow=new THREE.Group();rig.add(cow);const cowLegs=[];
 const moo=()=>{if(!ac)return;const o=ac.createOscillator(),f=ac.createBiquadFilter(),g=ac.createGain(),t0=ac.currentTime;o.type='sawtooth';o.frequency.setValueAtTime(150,t0);o.frequency.exponentialRampToValueAtTime(100,t0+1.1);
   f.type='lowpass';f.frequency.value=650;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.05,t0+.15);g.gain.exponentialRampToValueAtTime(.0001,t0+1.2);o.connect(f).connect(g).connect(ac.destination);o.start(t0);o.stop(t0+1.3);};
 
-let lastEnv=-1,lastHop=-1,prevT=0;
+let lastEnv=-1,lastHop=-1,prevT=0,satModel=false,satLoading=false;
 function fx(t,dt,env){
   if(env!==lastEnv||t<prevT-.5){allPS.forEach(p=>p.clear());lastEnv=env;}prevT=t;
   const R=Math.random;
@@ -729,17 +743,17 @@ function fx(t,dt,env){
   }
   /* vaca astronauta: 63,5 s a 72 s, atravessa a janela da frente */
   cow.visible=t>=63.5&&t<72;
-  if(cow.visible){const k=seg(t,63.5,72);cow.position.set(lerp(7.5,-7.5,k),.5+Math.sin(t*1.3)*.35,-6);cow.rotation.set(Math.sin(t*.8)*.25,1.2+t*.35,Math.sin(t*.6)*.3);
+  if(cow.visible){const k=seg(t,63.5,72);cow.position.set(lerp(7.5,-7.5,k),.5+Math.sin(t*1.3)*.35,-6);cow.rotation.set(Math.sin(t*.8)*.12,Math.PI+Math.sin(t*.5)*.25,Math.sin(t*.6)*.15);
     cowLegs.forEach((l,i)=>l.rotation.x=Math.sin(t*3+i*1.6)*.6);cow.userData.jet.material.opacity=.5+.4*Math.random();}
   /* cabine no espaço: poeirinha brilhando no ar */
   if(env===1&&cockpit.visible){for(let i=rate('mote',14,dt);i--;){const a=R()*6.28,r=Math.sqrt(R())*1.2;motes.emit(Math.cos(a)*r,-1+R()*1.9,Math.sin(a)*r,(R()-.5)*.05,(R()-.5)*.05,(R()-.5)*.05,5+R()*3,.025,.025,1,.95,.8,.8,0,0);}
     if(t>=76&&t<108){const sp=t<104?1:1-seg(t,104,108);for(let i=rate('str',60*sp,dt);i--;){const a=R()*6.28,r=4+R()*14;streaks.emit(Math.cos(a)*r,Math.sin(a)*r*.7,-80,0,0,70,1.7,.22,.22,.85,.9,1,.8,0,0);}}}
-  sat.visible=env===1&&t>=80&&t<102;
-  if(sat.visible){const k=seg(t,80,102);sat.position.set(lerp(20,-20,k),5+Math.sin(k*3)*1.5,-26);sat.rotation.set(t*.15,t*.25,.3);}
+  sat.visible=env===1&&t>=80&&t<102;if(!satModel&&!satLoading){satLoading=true;loadModel('models/estacao-espacial.glb',9,'max',w=>{while(sat.children.length)sat.remove(sat.children[0]);sat.add(w);satModel=true;});}
+  if(sat.visible){const k=seg(t,80,102);sat.position.set(lerp(26,-26,k),4+Math.sin(k*3)*1.2,-30);sat.rotation.set(.35+Math.sin(t*.1)*.1,t*.06,.15);}
   /* Lua: poeira em arco (sem ar, gravidade da Lua) */
   if(env===2){
     if(t>=127&&t<136){const kk=1-seg(t,133,136);for(let i=rate('dust',150*kk,dt);i--;){const a=R()*6.28,sp=3+R()*8;dustM.emit(Math.cos(a)*(1.5+R()*2),.15,Math.sin(a)*(1.5+R()*2),Math.cos(a)*sp,.6+R()*2.4,Math.sin(a)*sp,3+R()*2,.8,2.6,.62,.6,.58,.65,-1.62,0);}}
-    if(t>146&&t<159.6){const h=Math.floor((t-146)/1.7);if(h!==lastHop){if(lastHop>=0||h>0)for(let i=0;i<45;i++){const a=R()*6.28,sp=.8+R()*2;dustM.emit(rig.position.x+Math.cos(a)*.3,heightAt(rig.position.x,rig.position.z)+.06,rig.position.z+Math.sin(a)*.3,Math.cos(a)*sp,.4+R()*1.3,Math.sin(a)*sp,2.5+R(),.25,.8,.62,.6,.58,.6,-1.62,0);if(h>0)thud();}lastHop=h;}}else lastHop=-1;
+    if(t>143.5&&t<148.6){const h=Math.floor((t-143.5)/1.7);if(h!==lastHop){if(lastHop>=0||h>0)for(let i=0;i<45;i++){const a=R()*6.28,sp=.8+R()*2;dustM.emit(rig.position.x+Math.cos(a)*.3,heightAt(rig.position.x,rig.position.z)+.06,rig.position.z+Math.sin(a)*.3,Math.cos(a)*sp,.4+R()*1.3,Math.sin(a)*sp,2.5+R(),.25,.8,.62,.6,.58,.6,-1.62,0);if(h>0)thud();}lastHop=h;}}else lastHop=-1;
     while(stepPending>0){stepPending--;if(t>=SW[3]+1){stepSnd();for(let i=0;i<14;i++){const a=R()*6.28,sp=.4+R()*1.2;dustM.emit(rig.position.x+Math.cos(a)*.25,rig.position.y-1.4,rig.position.z+Math.sin(a)*.25,Math.cos(a)*sp,.3+R()*.8,Math.sin(a)*sp,2+R(),.18,.6,.62,.6,.58,.5,-1.62,0);}}}
     if(t>=175)for(let i=rate('mag',22,dt);i--;){const a=R()*6.28,r=.09+R()*.04;magic.emit(Math.cos(a)*r,(R()-.5)*.06,Math.sin(a)*r,-Math.sin(a)*.05,.04+R()*.04,Math.cos(a)*.05,1.6+R(),.022,0,R()<.5?.75:1,R()<.5?.9:.85,1,.9,0,0);}
   }
@@ -844,46 +858,55 @@ function rumbleLevel(t){if(t<48)return 0;if(t<50)return .3*seg(t,48,50);if(t<SW[
 
 /* ---------- narração ---------- */
 let narrate=true,voice=null;const hasSpeech='speechSynthesis' in window;
-function pickVoice(){const vs=speechSynthesis.getVoices();voice=vs.find(v=>/pt[-_]BR/i.test(v.lang))||vs.find(v=>/^pt/i.test(v.lang))||null;}
-if(hasSpeech){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+/* escolhe a melhor voz em português do Brasil disponível no aparelho */
+const VOICE_RANK=[/natural|neural|online/i,/luciana|francisca|thalita|vit[oó]ria|camila|fernanda|helo[ií]sa|maria/i,/google.*portugu[eê]s.*brasil|google.*pt-br/i,/premium|enhanced|aprimorad/i];
+function voiceScore(v){let sc=0;if(/pt[-_]BR/i.test(v.lang))sc+=100;else if(/^pt/i.test(v.lang))sc+=40;VOICE_RANK.forEach((r,i)=>{if(r.test(v.name))sc+=40-i*8;});if(v.localService)sc+=3;return sc;}
+let voiceList=[];let voicePref='';try{voicePref=localStorage.getItem('vl-voice')||'';}catch(e){}
+function pickVoice(){const vs=speechSynthesis.getVoices().filter(v=>/^pt/i.test(v.lang));voiceList=vs.sort((a,b)=>voiceScore(b)-voiceScore(a));
+  voice=voiceList.find(v=>v.name===voicePref)||voiceList[0]||null;const sel=$('#voiceSel');if(sel){sel.innerHTML='';voiceList.forEach(v=>{const o=document.createElement('option');o.value=v.name;o.textContent=v.name.replace(/Microsoft |Google /,'')+(voiceScore(v)>=130?' ★':'');if(voice&&v.name===voice.name)o.selected=true;sel.appendChild(o);});sel.parentElement.hidden=!voiceList.length;}}
+if(hasSpeech){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,800);}
 const cap=$('#cap');
-function say(text,rate){cap.textContent=text;if(!narrate||!hasSpeech)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='pt-BR';if(voice)u.voice=voice;u.rate=rate||.95;u.pitch=1.12;speechSynthesis.speak(u);}catch(e){}}
+/* fala em frases curtas, com pausas naturais; uma fala nova só interrompe a anterior quando é urgente (contagem) */
+function say(text,rate,urgent){cap.textContent=text;if(!narrate||!hasSpeech)return;try{if(urgent!==false)speechSynthesis.cancel();
+  const parts=text.split(/(?<=[.!?…])\s+/).filter(Boolean);parts.forEach(pt=>{const u=new SpeechSynthesisUtterance(pt);u.lang='pt-BR';if(voice)u.voice=voice;
+    const exc=/!$/.test(pt),q=/\?$/.test(pt);u.rate=(rate||.9)*(exc?1.04:1);u.pitch=q?1.12:exc?1.08:1.02;u.volume=1;speechSynthesis.speak(u);});}catch(e){}}
 
 const nums=['Dez','Nove','Oito','Sete','Seis','Cinco','Quatro','Três','Dois','Um'];
 const EV=[
  [-9.5,()=>{if(camMode)say('Olá, astronauta! Esta é a sua sala de aula. Está vendo o portal brilhando na sua frente?');}],
  [-4.5,()=>{if(camMode)say('Ele leva a gente até a base de foguetes. Vamos atravessar!');}],
- [.8,()=>say('Hoje nós vamos fazer uma viagem até a Lua!')],
- [4.5,()=>say('Olhe para frente. Que foguete grandão!')],
- [8.6,()=>say('Vamos andar até o elevador. Escuta os passarinhos!')],
- [14,()=>say('Agora o elevador vai subir até a portinha do foguete. Segura firme!')],
- [27,()=>say('Entramos! Esta é a cabine do foguete. Olhe para os lados e para os botões coloridos!')],
- [33.5,()=>say('Olhe pela janela da frente. Quando a gente chegar no zero, o foguete vai decolar. Conte comigo!')],
- ...nums.map((n,i)=>[40+i,()=>{beep();say(n,1.15);}]),
+ [.8,()=>say('Olá, astronauta! Eu sou a sua guia. Hoje nós vamos viajar até a Lua!')],
+ [5,()=>say('Olhe para frente. Está vendo aquele foguete gigante? É o nosso!')],
+ [9,()=>say('Vamos andando até o elevador. Escute os passarinhos e o vento.')],
+ [14.3,()=>say('Segura firme! O elevador vai subir bem alto, até a portinha do foguete.')],
+ [27,()=>say('Chegamos na cabine! Olhe para os lados. Quantos botões coloridos!')],
+ [33.5,()=>say('As chaves estão ligando, uma por uma. Quando a gente chegar no zero, o foguete decola. Conte comigo, bem alto!')],
+ ...nums.map((n,i)=>[40+i,()=>{beep();say(n+'!',1.05);}]),
  [50,()=>{boom();say('Decolar!',1.05);}],
- [53,()=>say('Uaaau! Estamos subindo! Olhe para baixo pela janela do chão. As casas estão ficando pequenininhas!')],
+ [53,()=>say('Uaaau! Estamos subindo! Sente o foguete tremer? Olhe para baixo pela janelinha do chão. Tudo está ficando pequenininho!')],
  [61,()=>say('Olha as nuvens passando pela janela!')],
- [66,()=>say('O céu está ficando escuro. Estamos chegando no espaço!')],
+ [65,()=>say('O céu azul está ficando escuro. Estamos chegando no espaço! Ei, olhe pela janela da frente. Quem é aquela?')],
  [68.6,()=>moo()],
- [76,()=>say('Bem-vindo ao espaço! Aqui é bem quietinho. Agora vire e olhe para trás, pela janela de trás.')],
- [83,()=>say('Aquela bola azul e bonita é a Terra, a nossa casa! O azul é o mar. E aquela parte verde é o Brasil, onde a gente mora!')],
- [91,()=>say('Olha! Os brinquedos estão flutuando aqui dentro. No espaço, tudo flutua!')],
- [98,()=>say('Agora olhe para frente. Está vendo aquela bola grande e cinza? É a Lua! Estamos chegando.')],
- [112,()=>say('Hora de pousar na Lua. Olhe para baixo. Bem devagar... devagarinho...')],
- [124,()=>say('Está quase... quase...')],
- [134,()=>{thump();say('Pousamos! Nós estamos na Lua!');}],
- [142,()=>say('Saímos do foguete! Olhe para baixo: o chão da Lua é cinza, cheio de pedrinhas e buracos.')],
- [148,()=>say('Aqui a gente fica levinho. Marche bem devagar no lugar, e você vai andar pela Lua!')],
- [155,()=>say('Olhe para trás: lá está o nosso foguete. E ali na frente, a bandeira do Brasil!')],
- [157.5,()=>say('Agora você pode andar pela Lua o quanto quiser! Olhe para o céu: aquela bola azul é a Terra, a nossa casa. Quando quiser levar a Terra com você, olhe bem fixo para ela.')],
- [164,()=>say('Estique as suas mãos para frente. A Terra vai vir até você!')],
- [176,()=>{chime();say('Olhe para as suas mãos. A Terra está nas suas mãos! Daqui ela parece pequenininha.');}],
- [184,()=>say('Todo mundo que você ama mora nela: sua família, seus amigos, sua escola. Vamos cuidar bem dela?')],
+ [76,()=>say('Bem-vindo ao espaço! Aqui é tudo silencioso. Agora vire a cabeça e olhe para trás, pela janela de trás.')],
+ [83,()=>say('Aquela bola azul é a Terra, a nossa casa! O azul é o mar. As manchas brancas são as nuvens. E ali, aquele pedaço verde, é o Brasil!')],
+ [91,()=>say('Olha em volta! A garrafa de água, o lápis e a maçã estão flutuando. No espaço, tudo flutua!')],
+ [98,()=>say('Olhe para frente. Aquela bola grande e cinza é a Lua! Ela vai ficando cada vez maior.')],
+ [112,()=>say('Hora de pousar. Olhe para baixo. Bem devagar… devagarinho…')],
+ [124,()=>say('Está quase… quase…')],
+ [134,()=>{thump();say('Pousamos! Parabéns, astronauta! Nós estamos na Lua!');}],
+ [141.5,()=>say('Saímos da nave. Olhe para baixo. O chão da Lua é cinza, cheio de pedrinhas e buracos.')],
+ [144,()=>say('Aqui a gente fica levinho. Pula, pula, pula!')],
+ [148.8,()=>say('Está vendo a bandeira do Brasil lá na frente? Vamos caminhar até ela!')],
+ [154.5,()=>say('Chegamos! E olha quem está aqui: um amigo astronauta. Dá um tchau para ele!')],
+ [159.3,()=>say('Agora você pode passear pela Lua o quanto quiser. Para andar, marche devagar no mesmo lugar. Olhe para o céu: aquela bola azul é a Terra, a nossa casa. Quando quiser levar a Terra com você, olhe bem fixo para ela.')],
+ [164,()=>say('Estique as suas mãos para frente. A Terra está vindo até você!')],
+ [176,()=>{chime();say('Olhe para as suas mãos. A Terra está nas suas mãos! Daqui da Lua, ela parece pequenininha.');}],
+ [184,()=>say('Todo mundo que você ama mora nela. Sua família, seus amigos e a sua escola. Vamos cuidar bem da nossa casa?')],
  [END,()=>{chime();say(camMode?'Missão cumprida, astronauta! Agora vamos voltar para a sala de aula.':'Missão cumprida, astronauta! Parabéns! Para voar de novo, olhe para a estrela amarela.');}],
  [ROOM_END+1,()=>{if(camMode){chime();say('Voltamos para a sala! Olhe para as suas mãos: você trouxe a Terra com você.');}}],
  [ROOM_END+9,()=>{if(camMode)say('Missão cumprida! Agora pode tirar os óculos bem devagarinho.');}]
 ];
-const SKIPS=[0,8.6,27,40,76,112,142,157,END];
+const SKIPS=[0,8.6,27,40,76,112,141,149,159,END];
 
 /* ---------- olhar: giroscópio ou arrastar ---------- */
 let ori=null,gyro=false,needCalib=true,dragYaw=0,dragPitch=0;
@@ -912,22 +935,23 @@ const hud=$('#hud'),toast=$('#toast'),rotateEl=$('#rotate');let hudTimer=0,toast
 function showHud(){hud.classList.remove('off');clearTimeout(hudTimer);if(stereo)hudTimer=setTimeout(()=>hud.classList.add('off'),3500);}
 function showToast(msg){toast.textContent=msg;toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,4000);}
 
-function jumpTo(t){T=Math.max(camMode?-10:0,t-.01);walk.x=walk.z=0;evIdx=EV.findIndex(e=>e[0]>=T);if(evIdx<0)evIdx=EV.length;if(hasSpeech)speechSynthesis.cancel();if(t<162){handsYaw=null;earthCalled=false;exploreT=0;lastHint=0;}gaze=0;}
+function jumpTo(t){T=Math.max(camMode?-10:0,t-.01);walk.x=walk.z=0;if(t>=156.5){walk.x=WALK_TO[0];walk.z=WALK_TO[1];}evIdx=EV.findIndex(e=>e[0]>=T);if(evIdx<0)evIdx=EV.length;if(hasSpeech)speechSynthesis.cancel();if(t<162){handsYaw=null;earthCalled=false;exploreT=0;lastHint=0;}gaze=0;}
 function restart(){needCalib=true;dragYaw=0;dragPitch=0;jumpTo(camMode?-10:0);}
 
 const P=new THREE.Vector3(),A=new THREE.Vector3(),B=new THREE.Vector3(),hp=new THREE.Vector3();
 function apply(t,dt){
   const env=t<SW[1]?0:t<SW[2]?1:2;
   padWorld.visible=env===0;spaceWorld.visible=env===1;moonWorld.visible=env===2;
-  rocket.visible=t<SW[0];lift.visible=t<SW[0];lift.position.y=lerp(1.5,12.5,eio(seg(t,14,24)))+.6;cockpit.visible=t>=SW[0]&&t<SW[3];toys.visible=env===1;lander.visible=t>=SW[3];
+  rocket.visible=t<SW[0];lift.visible=t<SW[0];lift.position.y=lerp(1.5,13.5,eio(seg(t,14,24)))+.6;cockpit.visible=t>=SW[0]&&t<SW[3];toys.visible=env===1;lander.visible=t>=SW[3];
   /* posição */
   if(t<SW[3])walk.x=walk.z=0;
-  if(t<SW[0]){const kw=eio(seg(t,9,13)),ke=eio(seg(t,14,24));P.set(0,lerp(1.5,12.5,ke)+(t>9&&t<13?Math.abs(Math.sin(Math.PI*(t-9)/.55))*.035:0),lerp(10,3.4,kw));}
-  else if(t<SW[1]){const lt=Math.max(0,t-50);P.set(0,12.5+6*lt*lt,0);}
+  if(t<SW[0]){const kw=eio(seg(t,9,13)),ke=eio(seg(t,14,24));P.set(0,lerp(1.5,13.5,ke)+(t>9&&t<13?Math.abs(Math.sin(Math.PI*(t-9)/.55))*.035:0),lerp(10,3.4,kw));}
+  else if(t<SW[1]){const lt=Math.max(0,t-50);P.set(0,13.5+6*lt*lt,0);}
   else if(t<SW[2])P.set(0,0,-330*eio(seg(t,75,110)));
   else if(t<SW[3])P.set(0,2.1+68*(1-eo3(seg(t,112,134))),0);
-  else{let h=0;if(t>146&&t<159.6)h=Math.abs(Math.sin(Math.PI*(t-146)/1.7))*.8;
-    const canWalk=env===2&&t>=SW[3]+1&&t<ROOM_END&&dt>0&&!earthCalled,nowMs=performance.now();
+  else{let h=0;if(t>143.5&&t<148.6)h=Math.abs(Math.sin(Math.PI*(t-143.5)/1.7))*.8;
+    if(t>=149&&t<156.5){const k=eio(seg(t,149,156.5));walk.x=lerp(0,WALK_TO[0],k);walk.z=lerp(0,WALK_TO[1],k);h=Math.abs(Math.sin(Math.PI*(t-149)/.75))*.05;if(dt>0){autoStep+=dt;if(autoStep>.75){autoStep=0;stepPending++;}}}
+    const canWalk=env===2&&t>=156.5&&t<ROOM_END&&dt>0&&!earthCalled,nowMs=performance.now();
     let walking=canWalk&&(nowMs<walkUntil||keyWalk||holdWalk);
     if(canWalk&&(keyWalk||holdWalk)){autoStep+=dt;if(autoStep>.5){autoStep=0;stepPending++;}}
     if(walking){const y=headYaw();walk.x+=-Math.sin(y)*1.1*dt;walk.z+=-Math.cos(y)*1.1*dt;const r=Math.hypot(walk.x,walk.z);if(r>45){walk.x*=45/r;walk.z*=45/r;}
@@ -975,6 +999,7 @@ function apply(t,dt){
   if(env===2){
     dust.forEach(s=>{const k=seg(t,129,140);const a=s.userData.a;const d=1.5+k*12;s.position.set(Math.cos(a)*d,.4+k*1.5,Math.sin(a)*d);s.scale.set(2+k*5,2+k*5,1);s.material.opacity=t>=129&&t<141?.7*Math.sin(Math.PI*k):0;});
     spinEarth(skyEarth,-.26-BR,t);skyEarth.position.copy(rig.position).add(EOFF);
+    buddy.position.y=heightAt(BUD[0],BUD[1])+Math.max(0,Math.sin(t*1.6))*.25;buddy.rotation.z=Math.sin(t*.8)*.05;
   }
   /* mãos */
   hands.visible=t>=162;
@@ -1061,6 +1086,8 @@ async function start(mode){
 }
 $('#btnVR').addEventListener('click',()=>start('vr'));
 $('#btnFlat').addEventListener('click',()=>start('flat'));
+$('#voiceSel').addEventListener('change',e=>{voicePref=e.target.value;try{localStorage.setItem('vl-voice',voicePref);}catch(er){}pickVoice();});
+$('#voiceTest').addEventListener('click',()=>{const was=narrate;narrate=true;say('Olá, astronauta! Eu sou a sua guia. Vamos viajar até a Lua?');narrate=was;});
 $('#bIpdM').addEventListener('click',()=>{setIpd(ipdMm-1,true);showHud();});
 $('#bIpdP').addEventListener('click',()=>{setIpd(ipdMm+1,true);showHud();});
 $('#bFull').addEventListener('click',()=>{const de=document.documentElement,on=document.fullscreenElement||document.webkitFullscreenElement;
