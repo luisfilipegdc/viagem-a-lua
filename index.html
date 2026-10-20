@@ -515,6 +515,38 @@ const blinkers=[];let screenTex,screenG,apollo=false,consoleRef=null;
   const throttle=new THREE.Group();throttle.position.set(.4,-.38,.022);const ts=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.08,10),chrome);ts.rotation.x=Math.PI/2;ts.position.z=.04;
   const th=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.07,16),new THREE.MeshStandardMaterial({color:0xff3b30,roughness:.35}));th.rotation.z=Math.PI/2;th.position.z=.085;throttle.add(ts,th);con.add(throttle);
   con.userData={needles,switches,launchBtn,lmat,throttle};consoleRef=con;
+  /* bonequinho de mola do Padre Champagnat, fundador dos Maristas, em cima do painel */
+  {const ledge=new THREE.Mesh(new THREE.BoxGeometry(1.06,.03,.2),metal);ledge.position.set(0,-.315,-1.27);cockpit.add(ledge);
+    const B=new THREE.Group();B.position.set(-.3,-.3,-1.24);B.rotation.y=.25;B.scale.setScalar(1.25);cockpit.add(B);
+    const skin=new THREE.MeshStandardMaterial({color:0xe8b893,roughness:.55});
+    const cass=new THREE.MeshStandardMaterial({color:0x17161c,roughness:.5,metalness:.05});
+    const whiteM=new THREE.MeshStandardMaterial({color:0xf7f7f2,roughness:.4});
+    const hairM=new THREE.MeshStandardMaterial({color:0x2a1b12,roughness:.6});
+    const eyeM=new THREE.MeshStandardMaterial({color:0x2b1a10,roughness:.2,metalness:.1});
+    const wood=(()=>{const[c,g]=cnv(256,64);g.fillStyle='#8a5a33';g.fillRect(0,0,256,64);const Rw=rng(3);for(let i=0;i<40;i++){g.strokeStyle=`rgba(${60+Rw()*40|0},35,15,.5)`;g.lineWidth=1+Rw()*2;g.beginPath();g.moveTo(0,Rw()*64);g.bezierCurveTo(80,Rw()*64,170,Rw()*64,256,Rw()*64);g.stroke();}return tex(c);})();
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(.05,.054,.018,32),new THREE.MeshStandardMaterial({map:wood,roughness:.7}));base.position.y=.009;B.add(base);
+    for(const sd of[-1,1]){const shoe=new THREE.Mesh(new THREE.SphereGeometry(.011,12,8),cass);shoe.scale.set(1,.6,1.6);shoe.position.set(sd*.011,.021,.008);B.add(shoe);}
+    const robe=new THREE.Mesh(new THREE.CylinderGeometry(.022,.032,.075,24),cass);robe.position.y=.058;B.add(robe);
+    const chest=new THREE.Mesh(new THREE.SphereGeometry(.023,20,14),cass);chest.scale.set(1.05,.8,.9);chest.position.y=.094;B.add(chest);
+    for(const sd of[-1,1]){const tab=new THREE.Mesh(new THREE.BoxGeometry(.006,.016,.002),whiteM);tab.position.set(sd*.0042,.1,.0205);tab.rotation.z=sd*.08;B.add(tab);
+      const arm=new THREE.Group();arm.position.set(sd*.022,.098,0);arm.rotation.set(-.9,0,sd*.75);const sl=new THREE.Mesh(new THREE.CylinderGeometry(.0075,.009,.038,12),cass);sl.position.y=-.019;arm.add(sl);
+      const hand=new THREE.Mesh(new THREE.SphereGeometry(.0075,12,8),skin);hand.scale.set(1,.6,1.2);hand.position.y=-.041;arm.add(hand);B.add(arm);}
+    const collar=new THREE.Mesh(new THREE.CylinderGeometry(.009,.011,.006,20),cass);collar.position.y=.111;B.add(collar);
+    const cross=new THREE.Group();const cm=new THREE.MeshStandardMaterial({color:0xc9ccd3,metalness:.9,roughness:.25});const c1=new THREE.Mesh(new THREE.BoxGeometry(.002,.012,.0015),cm);const c2=new THREE.Mesh(new THREE.BoxGeometry(.008,.002,.0015),cm);c2.position.y=.002;cross.add(c1,c2);cross.position.set(0,.082,.021);B.add(cross);
+    const spring=new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,.012,8),new THREE.MeshStandardMaterial({color:0x999999,metalness:.9,roughness:.3}));spring.position.y=.118;B.add(spring);
+    const H=new THREE.Group();H.position.y=.12;B.add(H);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.03,32,24),skin);head.scale.set(.92,1.05,.95);head.position.y=.03;H.add(head);
+    const hair=new THREE.Mesh(new THREE.SphereGeometry(.0315,32,20,0,Math.PI*2,0,Math.PI*.47),hairM);hair.scale.set(.95,1.06,.98);hair.position.y=.032;hair.rotation.x=-.25;H.add(hair);
+    const part=new THREE.Mesh(new THREE.SphereGeometry(.012,12,8),hairM);part.scale.set(1.6,.5,1);part.position.set(-.012,.058,.012);H.add(part);
+    for(const sd of[-1,1]){const side=new THREE.Mesh(new THREE.SphereGeometry(.011,12,8),hairM);side.scale.set(.6,1.3,1);side.position.set(sd*.026,.035,-.004);H.add(side);
+      const ear=new THREE.Mesh(new THREE.SphereGeometry(.006,10,8),skin);ear.scale.set(.5,1,.8);ear.position.set(sd*.028,.028,0);H.add(ear);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.0042,14,10),eyeM);eye.position.set(sd*.0105,.032,.0262);H.add(eye);
+      const hl=new THREE.Mesh(new THREE.SphereGeometry(.0012,8,6),whiteM);hl.position.set(sd*.0105+.0012,.0335,.0302);H.add(hl);
+      const brow=new THREE.Mesh(new THREE.BoxGeometry(.009,.0016,.002),hairM);brow.position.set(sd*.0108,.0405,.0262);brow.rotation.z=-sd*.12;H.add(brow);
+      const cheek=new THREE.Mesh(new THREE.SphereGeometry(.004,10,8),new THREE.MeshStandardMaterial({color:0xe89c86,transparent:true,opacity:.5,roughness:.6}));cheek.position.set(sd*.016,.022,.023);H.add(cheek);}
+    const nose=new THREE.Mesh(new THREE.SphereGeometry(.0035,10,8),skin);nose.scale.set(.8,1,1);nose.position.set(0,.026,.029);H.add(nose);
+    const smile=new THREE.Mesh(new THREE.TorusGeometry(.0065,.0011,6,16,Math.PI*.8),new THREE.MeshStandardMaterial({color:0x8a3b2e}));smile.rotation.z=Math.PI+Math.PI*.1;smile.position.set(0,.018,.0275);H.add(smile);
+    con.userData.bobble={H,bx:0,bz:0,vx:0,vz:0};}
   /* painel real da Apollo: faixa curva e inclinada abaixo da janela */
   const apMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.32,roughness:.55,metalness:.2,side:THREE.DoubleSide});
   const ap=new THREE.Mesh(new THREE.CylinderGeometry(1.32,1.02,.52,40,1,true,Math.PI-.95,1.9),apMat);ap.position.y=-.36;ap.visible=false;cockpit.add(ap);
@@ -615,7 +647,7 @@ function heightAt(x,z){let h=0;for(const[cx,cz,r]of craters){const d=Math.hypot(
 const lander=buildLM();lander.position.set(3.2,heightAt(3.2,5.5),5.5);lander.rotation.y=Math.atan2(-3.2,-5.5);
 loadModel('models/modulo-lunar.glb',6.2,'y',w=>{while(lander.children.length)lander.remove(lander.children[0]);lander.add(w);});
 const BUD=[1.8,-14.2],WALK_TO=[0.2,-11.6];const buddy=new THREE.Group();buddy.position.set(BUD[0],heightAt(BUD[0],BUD[1]),BUD[1]);buddy.rotation.y=Math.atan2(WALK_TO[0]-BUD[0],WALK_TO[1]-BUD[1]);moonWorld.add(buddy);
-loadModel('models/astronauta.glb',1.85,'y',w=>{buddy.add(w);});moonWorld.add(lander);lander.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+buddy.visible=false;moonWorld.add(lander);lander.traverse(o=>{if(o.isMesh)o.castShadow=true;});
 const flag=new THREE.Group();{const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.3,8),new THREE.MeshStandardMaterial({color:0xdddddd,metalness:.6,roughness:.3}));pole.position.y=1.15;
   const fg=new THREE.PlaneGeometry(1.2,.84,24,12);{const pp=fg.attributes.position;for(let i=0;i<pp.count;i++){const x=pp.getX(i),y=pp.getY(i);pp.setZ(i,Math.sin((x+.6)*7.5)*.035*(x+.6)+Math.sin(y*9+x*4)*.012);}fg.computeVertexNormals();}
   const f=new THREE.Mesh(fg,new THREE.MeshStandardMaterial({map:tex(flagCanvas()),side:THREE.DoubleSide,roughness:.8}));f.position.set(.62,1.84,0);
@@ -883,6 +915,7 @@ const EV=[
  [9,()=>say('Vamos andando até o elevador. Escute os passarinhos e o vento.')],
  [14.3,()=>say('Segura firme! O elevador vai subir bem alto, até a portinha do foguete.')],
  [27,()=>say('Chegamos na cabine! Olhe para os lados. Quantos botões coloridos!')],
+ [30.5,()=>say('E olha quem veio com a gente, em cima do painel: o Padre Champagnat, que fundou os Maristas!')],
  [33.5,()=>say('As chaves estão ligando, uma por uma. Quando a gente chegar no zero, o foguete decola. Conte comigo, bem alto!')],
  ...nums.map((n,i)=>[40+i,()=>{beep();say(n+'!',1.05);}]),
  [50,()=>{boom();say('Decolar!',1.05);}],
@@ -900,7 +933,7 @@ const EV=[
  [141.5,()=>say('Saímos da nave. Olhe para baixo. O chão da Lua é cinza, cheio de pedrinhas e buracos.')],
  [144,()=>say('Aqui a gente fica levinho. Pula, pula, pula!')],
  [148.8,()=>say('Está vendo a bandeira do Brasil lá na frente? Vamos caminhar até ela!')],
- [154.5,()=>say('Chegamos! E olha quem está aqui: um amigo astronauta. Dá um tchau para ele!')],
+ [154.5,()=>say('Chegamos na bandeira do Brasil! Que orgulho, astronauta!')],
  [159.3,()=>say('Agora você pode passear pela Lua o quanto quiser. Para andar, marche devagar no mesmo lugar. Olhe para o céu: aquela bola azul é a Terra, a nossa casa. Quando quiser levar a Terra com você, olhe bem fixo para ela.')],
  [164,()=>say('Estique as suas mãos para frente. A Terra está vindo até você!')],
  [176,()=>{chime();say('Olhe para as suas mãos. A Terra está nas suas mãos! Daqui da Lua, ela parece pequenininha.');}],
@@ -990,6 +1023,9 @@ function apply(t,dt){
   /* cabine */
   if(cockpit.visible){blinkers.forEach(b=>{b.material.emissiveIntensity=.2+.7*(Math.sin(t*2.4+b.userData.ph)>.2?1:0);});drawScreen(t);
     const cu=consoleRef.userData;
+    {const bb=cu.bobble;const kick=sh*60+(t>=49.5&&t<50.2?.6:0)+(t>=133.6&&t<134.2?.5:0);if(dt>0){bb.vx+=(Math.random()-.5)*kick*dt*60*.02;bb.vz+=(Math.random()-.5)*kick*dt*60*.02;
+      bb.vx+=(-bb.bx*90-bb.vx*3.2)*dt;bb.vz+=(-bb.bz*90-bb.vz*3.2)*dt;bb.bx+=bb.vx*dt;bb.bz+=bb.vz*dt;}
+      const idle=env===1?Math.sin(t*.9)*.06:0;bb.H.rotation.set(clamp(bb.bx,-.5,.5)+idle,Math.sin(t*.7)*.08,clamp(bb.bz,-.5,.5));}
     cu.needles.forEach((n,i)=>{const base=t<40?.2+Math.sin(t*.7+i)*.08:t<50?.3+(t-40)*.06:t<SW[1]?1.6+Math.sin(t*9+i)*.12:.6+Math.sin(t*.4+i*2)*.15;n.rotation.z=2.35-base*2.4;});
     cu.switches.forEach((sw,i)=>{const on=t>=34+i*1.2;sw.rotation.x+=((on?.55:-.55)-sw.rotation.x)*Math.min(1,dt*14);sw.userData.led.emissiveIntensity=on?1.2:0;});
     const press=tri(t,49.6,50,50.6);cu.launchBtn.position.z=.026-.012*press;cu.lmat.emissiveIntensity=t>=40&&t<50?.4+.6*(Math.sin(t*10)>0?1:0):(t>=50&&t<SW[1]?1.4:.35);
