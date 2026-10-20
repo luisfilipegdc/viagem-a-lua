@@ -250,8 +250,11 @@ function buildRocket(legs){
   cyl(1.6,1.45,.6,11.1,white);
   const cap=cyl(1.45,.82,2.2,12.5,silver);cyl(.82,.62,.3,13.75,dark);
   // janela da cápsula voltada para o elevador
-  const win=new THREE.Mesh(new THREE.CircleGeometry(.28,24),glass);const wr=1.45-.63*((12.55-11.4)/2.2);win.position.set(0,12.55,wr+.008);win.rotation.x=-Math.atan2(.63,2.2);g.add(win);
-  const fr=new THREE.Mesh(new THREE.TorusGeometry(.3,.04,8,28),dark);fr.position.copy(win.position);fr.rotation.copy(win.rotation);g.add(fr);
+  // janelas curvas que acompanham o cone da cápsula (sem ficar "coladas" por fora)
+  const rAt=y=>1.45-.63*((y-11.4)/2.2);
+  const patch=(y0,y1,th,w,dr,m)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(rAt(y1)+dr,rAt(y0)+dr,y1-y0,10,1,true,th-w/2,w),m);o.position.y=(y0+y1)/2;g.add(o);return o;};
+  for(const th of[-.27,.27]){patch(12.28,12.9,th,.42,.004,dark);patch(12.34,12.84,th,.34,.008,glass);}
+  const hatchM=new THREE.MeshStandardMaterial({color:0xaeb2ba,roughness:.3,metalness:.85});patch(11.55,12.15,0,.5,.004,hatchM);patch(11.58,12.12,0,.44,.006,dark);
   // torre de escape
   const rodR=(p1,p2,r,m)=>{const l=p1.distanceTo(p2);const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,8),m);o.position.copy(p1).add(p2).multiplyScalar(.5);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),p2.clone().sub(p1).normalize());g.add(o);};
   for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;rodR(new THREE.Vector3(Math.cos(a)*.55,13.85,Math.sin(a)*.55),new THREE.Vector3(Math.cos(a)*.2,15.35,Math.sin(a)*.2),.03,dark);}
