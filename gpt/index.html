@@ -1,7 +1,7 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Viagem à Lua — Exploração Livre</title>
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <style>body{margin:0;background:#050914;color:white;font-family:system-ui}#panel{position:fixed;top:12px;left:12px;z-index:5;background:#071326db;border:1px solid #60738b;border-radius:12px;padding:12px;max-width:290px}button{border:0;border-radius:8px;background:#dcecff;color:#102038;padding:9px;margin:3px;cursor:pointer;font-weight:600}#status{font-size:12px;color:#d4e1f5}#help{position:fixed;bottom:12px;left:12px;right:12px;text-align:center;z-index:3;pointer-events:none;font-size:13px;text-shadow:0 1px 4px #000} .small{font-size:12px}</style></head><body>
-<div id="panel"><strong>🚀 Viagem à Lua</strong><div class="small">Exploração livre · sem limite de tempo</div><div><button id="sensors">Ativar sensores</button><button id="vr">Modo VR</button></div><div><button id="ship">Ir à nave</button><button id="base">Base lunar</button><button id="crater">Cratera</button><button id="earth">Vista da Terra</button></div><div id="status" aria-live="polite">Toque em um destino ou mire no marcador por 2 segundos.</div></div>
+<div id="panel"><strong>🚀 Viagem à Lua</strong><div class="small">Exploração livre · sem limite de tempo</div><div><button id="sensors">Ativar sensores</button><button id="vr">Modo VR</button><button id="full">Tela cheia</button></div><div><button id="ship">Ir à nave</button><button id="base">Base lunar</button><button id="crater">Cratera</button><button id="earth">Vista da Terra</button></div><div id="status" aria-live="polite">Toque em um destino ou mire no marcador por 2 segundos.</div></div>
 <div id="help">Celular: gire para olhar · Computador: arraste com mouse · Clique ou mire nos círculos azuis</div>
 <a-scene background="color:#050713" renderer="antialias:true; colorManagement:true" vr-mode-ui="enabled:false">
 <a-assets><a-mixin id="marker" geometry="primitive:torus;radius:0.65;radiusTubular:0.08" material="color:#55d8ff;emissive:#1775aa;side:double" animation="property:rotation;to:0 360 0;loop:true;dur:11000;easing:linear"></a-mixin></a-assets>
@@ -38,6 +38,12 @@ try{if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEv
 else status.textContent='Sensores: tente girar o celular. A disponibilidade depende do navegador.'}
 catch(e){status.textContent='Não foi possível ativar sensores: '+e.message}});
 document.querySelector('#vr').addEventListener('click',()=>{status.textContent='Tentando entrar no modo VR. Se não funcionar no iPhone, use o modo de tela; suporte varia por navegador.';scene.enterVR().catch?.(()=>{status.textContent='Modo VR indisponível neste navegador.'})});
+(function(){const btn=document.querySelector('#full'),de=document.documentElement;
+const isFull=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+const upd=()=>{btn.textContent=isFull()?'Sair da tela cheia':'Tela cheia';};
+btn.addEventListener('click',async()=>{try{if(isFull()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);}else{const req=de.requestFullscreen||de.webkitRequestFullscreen;if(!req)throw new Error('sem suporte');await req.call(de);try{await screen.orientation.lock('landscape');}catch(e){}}}
+  catch(e){status.textContent='Este navegador não deixa entrar em tela cheia. No iPhone: Compartilhar → Adicionar à Tela de Início e abra pelo ícone.';}});
+document.addEventListener('fullscreenchange',upd);document.addEventListener('webkitfullscreenchange',upd);})();
 scene.addEventListener('loaded',()=>{
 let s=137;function rand(){s=(s*16807)%2147483647;return s/2147483647}
 const stars=document.querySelector('#stars'),terrain=document.querySelector('#terrain');

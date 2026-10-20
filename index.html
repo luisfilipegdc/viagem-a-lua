@@ -115,6 +115,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem)
 <div class="hud off" id="hud">
   <button id="bIpdM">Olhos −</button>
   <button id="bIpdP">Olhos +</button>
+  <button id="bFull">Tela cheia</button>
   <button id="bCenter">Centralizar</button>
   <button id="bSkip">Pular cena</button>
   <button id="bPause">Pausar</button>
@@ -884,6 +885,9 @@ $('#btnVR').addEventListener('click',()=>start('vr'));
 $('#btnFlat').addEventListener('click',()=>start('flat'));
 $('#bIpdM').addEventListener('click',()=>{setIpd(ipdMm-1,true);showHud();});
 $('#bIpdP').addEventListener('click',()=>{setIpd(ipdMm+1,true);showHud();});
+$('#bFull').addEventListener('click',()=>{const de=document.documentElement,on=document.fullscreenElement||document.webkitFullscreenElement;
+  try{if(on)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else{const req=de.requestFullscreen||de.webkitRequestFullscreen;if(!req)throw 0;const p=req.call(de);if(p&&p.then)p.then(()=>{try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}).catch(()=>showToast('No iPhone: Compartilhar → Adicionar à Tela de Início.'));}}
+  catch(e){showToast('No iPhone: Compartilhar → Adicionar à Tela de Início.');}showHud();});
 $('#bCenter').addEventListener('click',()=>{needCalib=true;dragYaw=0;dragPitch=0;showHud();});
 $('#bSkip').addEventListener('click',()=>{const n=SKIPS.find(s=>s>T+.5);if(n===undefined)restart();else jumpTo(n);running=true;$('#bPause').textContent='Pausar';if(ac)ac.resume();showHud();});
 $('#bPause').addEventListener('click',()=>{running=!running;$('#bPause').textContent=running?'Pausar':'Continuar';if(hasSpeech){running?speechSynthesis.resume():speechSynthesis.pause();}if(ac){running?ac.resume():ac.suspend();}showHud();});

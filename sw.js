@@ -1,4 +1,4 @@
-const CACHE='viagem-lua-v14';
+const CACHE='viagem-lua-v15';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./img/ceu-base.jpg','./img/lua-horizonte.jpg','./img/parede-cabine.jpg','./img/fogo.jpg','./img/terra.jpg','./img/estrelas.jpg','./img/casco-foguete.jpg','./img/lua.jpg','./img/chao-lua.jpg','./img/painel-cabine.jpg',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.all(CORE.map(u=>c.add(new Request(u,{mode:u.startsWith('http')?'no-cors':'same-origin'})).catch(()=>{}))))); self.skipWaiting();});
