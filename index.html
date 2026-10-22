@@ -739,7 +739,7 @@ function buildHand(side){
 }
 const hL=buildHand(-1);hL.position.set(-.088,-.31,-.42);const hR=buildHand(1);hR.position.set(.088,-.31,-.42);hands.add(hL,hR,hL.userData.arm,hR.userData.arm);
 const _w=new THREE.Vector3(),_s=new THREE.Vector3(),_up=new THREE.Vector3(0,1,0);
-function fitArm(h){h.updateMatrix();_w.set(0,0,.11).applyMatrix4(h.matrix);_s.set(h.userData.side*.26,-.52,.06);const a=h.userData.arm;const d=_w.clone().sub(_s);a.position.copy(_s).add(_w).multiplyScalar(.5);a.quaternion.setFromUnitVectors(_up,d.clone().normalize());a.scale.set(1,d.length(),1);}
+function fitArm(h){h.updateMatrix();_w.set(0,0,.11).applyMatrix4(h.matrix);_s.set(h.userData.side*.2,-.5,-.1);const a=h.userData.arm;const d=_w.clone().sub(_s);a.position.copy(_s).add(_w).multiplyScalar(.5);a.quaternion.setFromUnitVectors(_up,d.clone().normalize());a.scale.set(1,d.length(),1);}
 fitArm(hL);fitArm(hR);
 
 /* fim + olhar */
@@ -961,13 +961,16 @@ function curlHand(h,c){h.userData.fingers.forEach((f,i)=>{f.rotation.x=.25+c*1.0
 function poseHands(t){
   const r1=eio(seg(t,162.8,164.2)),c1=seg(t,163.9,164.45),l1=eio(seg(t,164.8,166.3));
   const r2=t>=HOLD2?eio(seg(t,173.2,174.5)):0,c2=t>=HOLD2?seg(t,174.3,174.75):0,l2=t>=HOLD2?eio(seg(t,175.2,176.7)):0;
-  for(const h of[hL,hR]){const sd=h.userData.side;const bx=-sd*.088;
+  for(const h of[hL,hR]){const sd=h.userData.side;const bx=sd*.088;
     let x=bx,y=-.31,z=-.42,ry=0,rz=-sd*.38,rx=.12,c=0;
     // areia: as duas mãos se juntam numa concha
-    const tog=r1*(1-.2*l1);x=bx*(1-.3*tog);y=-.31-.06*l1;z=-.42-.08*r1*(1-l1)-.08*l1;ry=sd*.35*tog;rz=-sd*(.38-.45*l1);rx=.12-.3*l1;c=Math.max(c1*(1-.45*l1),0)+(t>=164.5?.35:0)*(1-c1);
+    const tog=r1*(1-.2*l1);x=bx*(1-.15*tog);y=-.31-.06*l1;z=-.42-.08*r1*(1-l1)-.08*l1;ry=-sd*.2*tog;rz=-sd*(.38-.45*l1);rx=.12-.3*l1;c=Math.max(c1*(1-.45*l1),0)+(t>=164.5?.35:0)*(1-c1);
     // pedra: só a mão direita vai buscar, a esquerda segura a areia
-    if(sd>0&&t>=HOLD2){const ro=r2*(1-l2);x=x*(1-ro)+.03*ro+.05*l2;z=z-.16*ro;y=y-.06*ro;ry=ry*(1-r2)+.1*r2;c=Math.max(c,0)*(1-r2)+(.15+1.15*c2)*r2*(1-.55*l2);rz=rz*(1-ro)+(-sd*.2)*ro;}
+    if(sd>0&&t>=HOLD2){const ro=r2*(1-l2);x=x*(1-ro)+.06*ro+.03*l2;z=z-.16*ro;y=y-.06*ro;ry=ry*(1-r2)+.1*r2;c=Math.max(c,0)*(1-r2)+(.15+1.15*c2)*r2*(1-.55*l2);rz=rz*(1-ro)+(-sd*.2)*ro;}
     h.position.set(x,y,z);h.rotation.set(rx,ry,rz);curlHand(h,clamp(c,0,1.2));fitArm(h);}}
+/* acelera os trechos dentro da nave (cabine antes da contagem, espaço e pouso) sempre que ninguém está falando */
+function warp(t){const fast=(t>=SW[0]+.2&&t<39.5)||(t>=60&&t<133);if(!fast)return 1;
+  const talking=narrate&&hasSpeech&&(speechSynthesis.speaking||speechSynthesis.pending);return talking?1:2.6;}
 function reachK(t){const r=(a)=>eio(seg(t,a,a+1.5))*(1-eio(seg(t,a+2,a+3.5)));return t<162?0:Math.max(r(162.8),t>=HOLD2?r(173.2):0);}
 /* intensidade da turbulência ao longo da viagem (0 a 1) */
 let turbI=0;
@@ -1201,7 +1204,7 @@ function apply(t,dt){
   travelEarth.visible=false;
   if(portal.visible){const s=eo3(seg(t,-8.5,-6.5))*(1+eio(seg(t,-2,0))*5);portal.scale.setScalar(Math.max(.001,s));portal.position.z=lerp(-3,-.6,eio(seg(t,-2,0)));portal.userData.disc.rotation.z=-t*1.4;}
   /* fade */
-  let fo=t<0?Math.max(1-seg(t,-10,-8.5),seg(t,-1.1,0)):1-seg(t,0,1.5);for(const s of SW)fo=Math.max(fo,tri(t,s-1.25,s,s+1.5));if(camMode)fo=Math.max(fo,tri(t,ROOM_END-1.25,ROOM_END,ROOM_END+1.5));fader.material.opacity=fo;fader.visible=fo>.001;
+  let fo=t<0?Math.max(1-seg(t,-10,-8.5),seg(t,-1.1,0)):1-seg(t,0,1.5);for(const s of SW)fo=Math.max(fo,tri(t,s-.6,s,s+.7));if(camMode)fo=Math.max(fo,tri(t,ROOM_END-1.25,ROOM_END,ROOM_END+1.5));fader.material.opacity=fo;fader.visible=fo>.001;
   sfx(t,dt,env,room);
   /* som */
   if(ac&&rumbleGain){if(dt>0&&turbI>.45&&Math.random()<dt*turbI*.9)noiseBurst(.18+Math.random()*.2,300+Math.random()*900,.06*turbI);rumbleGain.gain.setTargetAtTime(rumbleLevel(t)*.8*(.85+.3*turbI),ac.currentTime,.12);droneGain.gain.setTargetAtTime(t>=SW[1]?.045:0,ac.currentTime,.5);}
@@ -1232,7 +1235,7 @@ function loop(now){
   const portrait=stereo&&window.innerHeight>window.innerWidth;
   if(rotateEl.hidden===portrait){rotateEl.hidden=!portrait;if(!portrait)needCalib=true;}
   const holding=(T>=HOLD&&!earthCalled)||(T>=HOLD2&&!collect2);if(T>=HOLD-.6&&!spotsPlaced&&T<165)placeSpots();
-  if(running&&!portrait){if(holding)exploreT+=dt;else T+=dt;while(evIdx<EV.length&&EV[evIdx][0]<=T){EV[evIdx][1]();evIdx++;}}
+  if(running&&!portrait){if(holding)exploreT+=dt;else T+=dt*warp(T);while(evIdx<EV.length&&EV[evIdx][0]<=T){EV[evIdx][1]();evIdx++;}}
   updateHead();apply(T,running?dt:0);
   if(holding&&reticle&&running){rig.updateMatrixWorld(true);head.getWorldPosition(hp);A.copy(earthCalled?rockSpot.position:sandSpot.position).sub(hp).normalize();vTmp.set(0,0,-1).applyQuaternion(head.quaternion);
     const on=vTmp.angleTo(A)<.22;gaze=on?gaze+dt:Math.max(0,gaze-dt*1.5);reticle.visible=true;drawReticle(clamp(gaze/1.8));
